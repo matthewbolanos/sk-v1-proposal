@@ -1,0 +1,2 @@
+Generate an image of a cute animal.
+Animal: {{$input}}
