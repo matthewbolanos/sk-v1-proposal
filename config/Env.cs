@@ -15,7 +15,7 @@ internal sealed class Env
     internal static string? Var(string name)
     {
         var configuration = new ConfigurationBuilder()
-            .AddUserSecrets<Env>()
+            .AddUserSecrets("5ee045b0-aea3-4f08-8d31-32d1a6f8fed0")
             .Build();
 
         var value = configuration[name];
