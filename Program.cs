@@ -6,6 +6,8 @@ using Microsoft.SemanticKernel.Orchestration;
 using Microsoft.SemanticKernel.Planning;
 using Microsoft.SemanticKernel.Plugins.Core;
 using Microsoft.SemanticKernel.AI.ChatCompletion;
+using Microsoft.SemanticKernel.Planners;
+using System.Text.Json;
 
 // Setup
 //////////////////////////////////////////////////////////////////////////////////
@@ -53,7 +55,7 @@ if (false)
 // Scenario 2: Run semantic function
 //////////////////////////////////////////////////////////////////////////////////
 
-if (true)
+if (false)
 {
   Console.WriteLine("\n\nStarting scenario 2");
   Console.WriteLine("/////////////////////////////////////////////////////\n");
@@ -121,15 +123,9 @@ if (false)
   plan.AddSteps(
       kernel.Functions.GetFunction("TimePlugin", "Today"),
       kernel.Functions.GetFunction("WriterPlugin", "ShortPoem")
-
-  // TODO: need a way to simplify, for example:
-  // "TimePlugin.Today"
-  // "WriterPlugin.ShortPoem result"
-
-  // TODO: need a way to pass variables, for example:
-  // "TimePlugin.Today as | today |"
-  // "WriterPlugin.ShortPoem today
   );
+
+  KernelResult result = await kernel.RunAsync(plan);
 
   // TODO: need a way to simplify this
   // KernelResult result = await kernel.RunAsync(
@@ -143,6 +139,36 @@ if (false)
   //     "WriterPlugin.ShortPoem"
   // );
 
+  Console.WriteLine(result.GetValue<string>());
+}
+
+
+// Scenario 4: Using a planner
+//////////////////////////////////////////////////////////////////////////////////
+
+if (true)
+{
+  string AzureOpenAIDeploymentName = Env.Var("AzureOpenAI:ChatCompletionDeploymentName")!;
+  string AzureOpenAIEndpoint = Env.Var("AzureOpenAI:Endpoint")!;
+  string AzureOpenAIApiKey = Env.Var("AzureOpenAI:ApiKey")!;
+
+  IKernel kernel = new KernelBuilder()
+      .WithLoggerFactory(loggerFactory)
+      .WithAzureChatCompletionService(
+          AzureOpenAIDeploymentName,  // The name of your deployment (e.g., "gpt-35-turbo")
+          AzureOpenAIEndpoint,        // The endpoint of your Azure OpenAI service
+          AzureOpenAIApiKey           // The API key of your Azure OpenAI service
+      )
+      //.WithSemanticFunctionsFromDirectory
+      .Build();
+
+  // TODO: This should be part of the kernel builder
+  kernel.ImportSemanticFunctionsFromDirectory(pluginsDirectory, "WriterPlugin");
+  kernel.ImportFunctions(new TimePlugin(), "TimePlugin");
+
+  SequentialPlanner planner = new SequentialPlanner(kernel);
+  var ask = "Can you write a poem about today's date?";
+  var plan = await planner.CreatePlanAsync(ask);
 
   KernelResult result = await kernel.RunAsync(plan);
 
@@ -150,7 +176,7 @@ if (false)
 }
 
 
-// Scenario 4: Testing of Handlebars based planner
+// Planner Test 1: Testing of Handlebars based planner
 //////////////////////////////////////////////////////////////////////////////////
 
 if (false)
@@ -179,15 +205,25 @@ if (false)
 
   chatMessages.AddMessage(AuthorRole.System, "You are an assistant that creates Handlebar templates that can be rendered to satisfy a user's goal.");
   chatMessages.AddMessage(AuthorRole.User, "Can you write a poem about yesterday's date?");
-  chatMessages.AddMessage(AuthorRole.User, "Please return the result in a JSON object with the following format:{result: <ANSWER>}");
+  chatMessages.AddMessage(AuthorRole.User, "Please return the entire result in a JSON object with the following format:{result: <RESULT>}");
   chatMessages.AddMessage(AuthorRole.System, @"You have the following helpers that you can use to accomplish the user's goal:
 ## Functions
+
+### ToString
+- *Description*: Converts a value to a string.
+- *Inputs*: 
+  - `value`: any - The value to convert to a string. (required)
+- *Output*: string - The string representation of the value.
+- *Errors*: None expected.
+- *Example*: 
+  ```handlebars
+  {{ToString value=value}}
+  ```
 
 ### TimePlugin.Today
 - *Description*: Returns today's date.
 - *Inputs*: None.
-- *Output*: 
-  - `result`: date - Today's date.
+- *Output*: date - Today's date.
 - *Errors*: None expected.
 - *Example*: 
   ```handlebars
@@ -199,8 +235,7 @@ if (false)
 - *Inputs*:
   - `date`: date - The date to add days to. (required)
   - `days`: number - The number of days to add; it can be negative (required)
-- *Output*: 
-  - `result`: date - The date with the days added.
+- *Output*: date - The date with the days added.
 - *Errors*: None expected.
 - *Example*: 
   ```handlebars
@@ -211,8 +246,7 @@ if (false)
 - *Description*: Returns a short poem.
 - *Inputs*: 
   - `input`: string - What to write a poem about. (required)
-- *Output*:
-  - `poem`: string - The poem.
+- *Output*: string - The poem.
 - *Errors*: None expected.
 - *Example*: 
   ```handlebars
@@ -222,9 +256,9 @@ if (false)
 Do not use helper functions that are not listed above"
   );
 
+  chatMessages.AddMessage(AuthorRole.System, "You will now provide the user a handlebar template that will accomplish their goal and generate the expected JSON response.");
   chatMessages.AddMessage(AuthorRole.Assistant, "I can try to do that. Here is the JSON that you requested:");
-  chatMessages.AddMessage(AuthorRole.System, "You will now provide the user with a minimal handlebar template that will accomplish their goal.");
-  chatMessages.AddMessage(AuthorRole.System, "Do not provide any additional commentary or information after generating the handlebar template");
+  chatMessages.AddMessage(AuthorRole.Assistant, "```");
 
   var results = await chatCompletion.GenerateMessageAsync(chatMessages);
 
@@ -232,7 +266,7 @@ Do not use helper functions that are not listed above"
 }
 
 
-// Scenario 5: Testing of Handlebars based planner (action oriented)
+// Planner Test 2: Testing of Handlebars based planner (action oriented)
 //////////////////////////////////////////////////////////////////////////////////
 
 if (false)
