@@ -1,0 +1,13 @@
+bin
+obj
+
+*.ini
+*.ini
+*.cache
+*.log
+*.tmp
+
+*.env
+*.venv
+**/__pycache__/**
+**/poetry.lock
