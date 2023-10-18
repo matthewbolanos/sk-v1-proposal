@@ -1,4 +1,4 @@
-name: SimpleChat
+name: GroundedChatComplete
 template: |
   {{#message role="system"}}
   {{persona}}
@@ -9,8 +9,12 @@ template: |
     {{~Content~}}
     {{/message}}
   {{/each}}
+
+  {{#message role="system"}}
+    {{Search query=(GetSearchQuery messages=messages)}}
+  {{/message}}
 template_format: handlebars
-description: A function that uses the chat history to respond to the user.
+description: A function that gets uses the chat history to respond to the user.
 input_variables:
   - name: persona
     type: string

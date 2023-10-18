@@ -102,8 +102,10 @@ public sealed class AIFunction : ISKFunction, IDisposable
         string pluginName,
         SKContext context, // TODO: Remove this parameter
         IAIService client,
+        List<ISKFunction>? functions,
         AIRequestSettings? requestSettings,
         Dictionary<string,object>? variables,
+
         CancellationToken cancellationToken = default)
         
     {
@@ -115,6 +117,10 @@ public sealed class AIFunction : ISKFunction, IDisposable
             {
                 // Generate the prompt using the template
                 variables ??= new Dictionary<string, object>();
+                foreach(ISKFunction function in functions ?? new List<ISKFunction>())
+                {
+                    RegisterHelpers(function, (IChatCompletion)client, context, (HandlebarsPromptTemplate)this._promptTemplate);
+                }
                 string renderedPrompt = this._promptTemplate.Render(variables, cancellationToken);
 
                 // Extract the chat history from the rendered prompt
@@ -170,6 +176,32 @@ public sealed class AIFunction : ISKFunction, IDisposable
     [DebuggerBrowsable(DebuggerBrowsableState.Never)]
     private string DebuggerDisplay => $"{this.Name} ({this.Description})";
 
+
+    private static void RegisterHelpers(ISKFunction f, IChatCompletion client, SKContext sKContext, HandlebarsPromptTemplate promptTemplate)
+    {
+        if (f is AIFunction)
+        {
+            promptTemplate.AddFunction(
+                pluginName: "Chat", // TODO: Need to get this from kernel
+                function: (AIFunction)f,
+                skContext: sKContext, // TODO: should remove
+                client: client,
+                requestSettings: new AIRequestSettings()
+                {
+                    ModelId = "gpt-35-turbo",
+                },
+                cancellationToken: default);
+        }
+        else
+        {
+            promptTemplate.AddFunction(
+                pluginName: "Search",  // TODO: Need to get this from kernel
+                function: f,
+                skContext: sKContext // TODO: should remove
+            );
+        }
+    }
+
     #endregion
 
     #region Obsolete
@@ -196,7 +228,11 @@ public sealed class AIFunction : ISKFunction, IDisposable
     [Obsolete("The describe function will removed in a future release")]
     public FunctionView Describe()
     {
-        throw new NotImplementedException();
+        return new FunctionView(
+            this.Name,
+            "_GLOBAL_FUNCTIONS_",
+            this.Description
+        );
     }
 
     /// <inheritdoc/>

@@ -1,4 +1,4 @@
-name: SimpleChat
+name: GroundedChat
 template: |
   {{#message role="system"}}
   {{persona}}
@@ -9,6 +9,10 @@ template: |
     {{~Content~}}
     {{/message}}
   {{/each}}
+
+  {{#message role="system"}}
+  {{grounding}}
+  {{/message}}
 template_format: handlebars
 description: A function that gets uses the chat history to respond to the user.
 input_variables:
@@ -21,6 +25,10 @@ input_variables:
     type: ChatHistory
     description: The history of the chat.
     is_required: true
+  - name: grounding
+    type: string
+    description: Grounding for the assistant.
+    is_required: false
 output_variable:
     type: string
     description: The response from the assistant.

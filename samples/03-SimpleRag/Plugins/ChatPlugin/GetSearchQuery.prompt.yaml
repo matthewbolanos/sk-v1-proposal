@@ -2,7 +2,7 @@ name: GetSearchQuery
 template: |
   {{#message role="system"}}
   You are responsible for determining the users last intent based on the chat history
-  so that it can be used to perform a Google search query.
+  so that it can be used to perform a Bing search query.
   {{/message}}
 
   {{#each messages}}
@@ -16,7 +16,7 @@ template: |
   {{/message}}
 
   {{#message role="system"}}
-  You will now reply back with a single search query that will be used to perform a Google search.
+  You will now reply back with a single search query that will be used to perform a Bing search.
   Do not provide any additional information besides the search query.
   {{/message}}
 
@@ -33,7 +33,7 @@ input_variables:
     is_required: true
 output_variable:
     type: string
-    description: The Google search to perform on behalf of the user.
+    description: The Bing search to perform on behalf of the user.
 models:
   default:
     max_tokens: 150

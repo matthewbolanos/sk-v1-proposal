@@ -38,7 +38,7 @@ while(true)
             { "persona", "You are a snarky (yet helpful) teenage assistant. Make sure to use hip slang in every response." },
             { "messages", chatHistory }
         },
-        "SimpleChat messages=messages persona=persona"
+        "SimpleChat(messages=messages,persona=persona)"
     );
 
     Console.WriteLine("Assistant > " + result);

@@ -37,7 +37,7 @@ while(true)
         {
             { "messages", chatHistory }
         },
-        "SimpleChat messages=messages"
+        "SimpleChat(messages=messages)"
     );
 
     Console.WriteLine("Assistant > " + result);

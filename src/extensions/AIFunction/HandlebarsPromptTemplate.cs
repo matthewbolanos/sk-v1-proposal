@@ -29,8 +29,16 @@ public class HandlebarsPromptTemplate : ICompiledPromptTemplate
         });
     }
 
-    public string Render(Dictionary<string, object>? variables, CancellationToken cancellationToken = default)
+    public string Render(Dictionary<string, object> variables, CancellationToken cancellationToken = default)
     {
+        handlebarsInstance.RegisterHelper("Set", (writer, context, arguments) => 
+        {
+            // Get the parameters from the template arguments
+            var parameters = arguments[0] as IDictionary<string, object>;
+
+            variables.Add((string)parameters!["name"], parameters["value"]);
+        });
+
         var compiledTemplate = handlebarsInstance.Compile(template);
         return compiledTemplate(variables);
     }
@@ -49,14 +57,45 @@ public class HandlebarsPromptTemplate : ICompiledPromptTemplate
                 inputParameters.Add(param.Name, parameters[param.Name]);
             }
 
+            List<ISKFunction> functions = new();
+            foreach(FunctionView functionView in skContext.Functions.GetFunctionViews())
+            {
+                functions.Add(skContext.Functions.GetFunction(functionView.Name));
+            }
+
             // Run the function
             var result = function.RunAsync(
                 pluginName,
                 skContext,
                 client,
+                functions,
                 requestSettings,
                 inputParameters,
                 cancellationToken
+            ).GetAwaiter().GetResult();
+
+            // Write the result to the template
+            writer.Write(result);
+        });
+    }
+
+    public void AddFunction(string pluginName, ISKFunction function, SKContext skContext, CancellationToken cancellationToken = default)
+    {
+        handlebarsInstance.RegisterHelper(function.Name, (writer, context, arguments) => 
+        {
+            // Get the parameters from the template arguments
+            var parameters = arguments[0] as IDictionary<string, object>;
+
+            // Prepare the input parameters for the function
+            var inputParameters = new Dictionary<string, object>();
+            foreach (var param in function.Describe().Parameters)
+            {
+                skContext.Variables.Set(param.Name, (string)parameters[param.Name]);
+            }
+
+            // Run the function
+            var result = function.InvokeAsync(
+                skContext
             ).GetAwaiter().GetResult();
 
             // Write the result to the template
