@@ -10,7 +10,7 @@ template: |
     {{/message}}
   {{/each}}
 template_format: handlebars
-description: A function that gets uses the chat history to respond to the user.
+description: A function that uses the chat history to respond to the user.
 input_variables:
   - name: messages
     type: ChatHistory
