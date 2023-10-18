@@ -28,7 +28,7 @@ public static class KernelAIFunctionExtensions
         }
     }
 
-    public async static Task<string> RunFlowAsync(
+    public async static Task<string> RunAsync(
         this IKernel kernel,
         Dictionary<string, object>? variables,
         params string[] functions)

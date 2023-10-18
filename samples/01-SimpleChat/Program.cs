@@ -32,7 +32,7 @@ while(true)
     chatHistory.AddUserMessage(Console.ReadLine()!);
 
     // Run the simple chat flow
-    var result = await kernel.RunFlowAsync(
+    var result = await kernel.RunAsync(
         variables: new()
         {
             { "messages", chatHistory }
