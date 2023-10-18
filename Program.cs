@@ -8,6 +8,7 @@ using Microsoft.SemanticKernel.Plugins.Core;
 using Microsoft.SemanticKernel.AI.ChatCompletion;
 using Microsoft.SemanticKernel.Planners;
 using System.Text.Json;
+using Microsoft.SemanticKernel.TemplateEngine;
 
 // Setup
 //////////////////////////////////////////////////////////////////////////////////
