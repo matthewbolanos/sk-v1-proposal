@@ -9,6 +9,7 @@ string AzureOpenAIApiKey = Env.Var("AzureOpenAI:ApiKey")!;
 
 // Initialize all necessary functions
 var currentDirectory = Directory.GetCurrentDirectory();
+
 HandlebarsAIFunction chatFunction = HandlebarsAIFunction.FromYaml("Chat", currentDirectory + "/Plugins/ChatPlugin/SimpleChat.prompt.yaml");
 
 // Create new kernel

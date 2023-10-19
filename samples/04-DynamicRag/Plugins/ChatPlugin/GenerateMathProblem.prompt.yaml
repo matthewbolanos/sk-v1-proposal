@@ -21,7 +21,7 @@ template: |
   - A summary of the math problem the user is trying to solve.
 
   ## Rules
-  - The summary should provide as much detail as possible about the problem.
+  - The summary should be 2-3 sentences long, max.
   - Do not provide the steps or answer to the problem otherwise the user will not learn how to solve it themselves.
   {{/message}}
 

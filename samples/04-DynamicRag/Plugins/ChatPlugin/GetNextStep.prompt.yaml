@@ -1,11 +1,5 @@
 name: GetNextStep
 template: |
-  {{#each messages}}
-    {{#message role=Role}}
-    {{~Content~}}
-    {{/message}}
-  {{/each}}
-
   {{#message role="system"}}
   ## Instructions
   You will now return a single key that represents the action you will perform next.
@@ -17,17 +11,77 @@ template: |
   - If the bot is unsure if it needs more details to fully answer a math question, it should return GetMoreDetails.
   - Do not provide any other information in this response besides the action name.
   - Do not add any punctuation to the end of the response.
-
-  ## Examples
-  user: Can you help me count my animals?
-  assistant: AskClarifyingMathQuestion
-
-  user: What is 2 plus 2?
-  assistant: PerformMath
-
-  user:  Can you tell me a story
-  assistant: Other
   {{/message}}
+
+
+  {{#message role="system"}}
+  ### Examples 1
+  {{/message}}
+
+  {{#message role="system"}}
+  Can you help me count my animals?
+  {{/message}}
+
+  {{#message role="assistant"}}
+  AskClarifyingMathQuestion
+  {{/message}}
+  
+
+  {{#message role="system"}}
+  ### Examples 2
+  {{/message}}
+
+  {{#message role="system"}}
+  What is 2 plus 2?
+  {{/message}}
+
+  {{#message role="assistant"}}
+  PerformMath
+  {{/message}}
+
+
+  {{#message role="system"}}
+  ### Examples 3
+  {{/message}}
+
+  {{#message role="system"}}
+  How many eggs would I have if I had 2 and then doubled them?
+  {{/message}}
+
+  {{#message role="assistant"}}
+  You would have 4 eggs.
+  {{/message}}
+
+  {{#message role="system"}}
+  What if I had tripled them instead?
+  {{/message}}
+
+  {{#message role="assistant"}}
+  PerformMath
+  {{/message}}
+
+  {{#message role="system"}}
+  ### Examples 3
+  {{/message}}
+
+  {{#message role="system"}}
+  Can you tell me a story
+  {{/message}}
+
+  {{#message role="assistant"}}
+  Other
+  {{/message}}
+
+  {{#message role="system"}}
+  ## Actual Response
+  {{/message}}
+
+  {{#each messages}}
+    {{#message role=Role}}
+    {{~Content~}}
+    {{/message}}
+  {{/each}}
+
 
 template_format: handlebars
 description: A function that determines the next action the assistant should take.

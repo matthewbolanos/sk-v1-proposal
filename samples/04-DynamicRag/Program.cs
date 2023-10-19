@@ -34,7 +34,6 @@ kernel.RegisterCustomFunction(SKFunction.FromNativeFunction(
             "Solve the following math problem.\n\n" + math_problem,
             new List<string>(){"Math"}
         );
-
         // Run the plan (Results are not likely to be correct because this sample is using mock functions)
         var result = await plan.InvokeAsync(kernel, kernel.CreateNewContext(), new Dictionary<string, object>());
         return result.GetValue<string>();
