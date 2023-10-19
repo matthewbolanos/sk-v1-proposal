@@ -29,6 +29,7 @@ template: |
   - Wrap your Handlebar template in ``` to escape it and prevent it from being rendered.
   - There are no initial variables available to you. You must create them yourself using the `set` helper.
   - You must always use hash arguments for the custom helpers otherwise the template will not render correctly.
+  - Add spaces between closing curly brackets and parenthesis to avoid rendering errors. For example, use `{{set name='var' value=(json (eq input1 input2) ) }}` instead of `{{set name='var' value=(json (eq input1 input2))}}`.
 
   ## Helpers
   You have the following Handlebar helpers that you can use to accomplish the user's goal:
@@ -72,7 +73,7 @@ template: |
   {{/message}}
 
   {{#message role="system"}}
-  Take a deep breath and use these instructions to provide the user with a Handlebar template that will accomplish their goal in the most efficient way possible.
+  Take a deep breath and use these instructions to provide the user with a Handlebar template that will accomplish their goal in the most efficient way possible (while still maintaining spaces between parenthesis and using hash variables).
   {{/message}}
 
   {{#message role="assistant"}}

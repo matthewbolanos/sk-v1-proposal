@@ -7,6 +7,7 @@ template: |
   ## Rules
   - The bot should return the action it will perform next to satisfy the user's request.
   - The valid actions are: PerformMath, AskClarifyingMathQuestion, Other
+  - Use PerformMath if you have all the information you need to solve a math problem.
   - If the bot doesn't know what to do, it should return Other.
   - If the bot is unsure if it needs more details to fully answer a math question, it should return GetMoreDetails.
   - Do not provide any other information in this response besides the action name.
@@ -22,6 +23,10 @@ template: |
   Can you help me count my animals?
   {{/message}}
 
+  {{#message role="system"}}
+  Provide action
+  {{/message}}
+
   {{#message role="assistant"}}
   AskClarifyingMathQuestion
   {{/message}}
@@ -33,6 +38,10 @@ template: |
 
   {{#message role="system"}}
   What is 2 plus 2?
+  {{/message}}
+
+  {{#message role="system"}}
+  Provide action
   {{/message}}
 
   {{#message role="assistant"}}
@@ -56,6 +65,10 @@ template: |
   What if I had tripled them instead?
   {{/message}}
 
+  {{#message role="system"}}
+  Provide action
+  {{/message}}
+
   {{#message role="assistant"}}
   PerformMath
   {{/message}}
@@ -66,6 +79,10 @@ template: |
 
   {{#message role="system"}}
   Can you tell me a story
+  {{/message}}
+
+  {{#message role="system"}}
+  Provide action
   {{/message}}
 
   {{#message role="assistant"}}
@@ -81,6 +98,10 @@ template: |
     {{~Content~}}
     {{/message}}
   {{/each}}
+
+  {{#message role="system"}}
+  Provide action
+  {{/message}}
 
 
 template_format: handlebars

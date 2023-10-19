@@ -138,12 +138,20 @@ public class Math
         return System.Math.Tan(number);
     }
 
-    [SKFunction, Description("Get the power of a number. For example {{Math_Pow number=2 power=3}} will return 8.")]
+    [SKFunction, Description("Raise a number to a power. For example {{Math_Pow number1=5 number2=2}} will return 25.")]
     public double Pow(
-        [Description("The number")] double number,
-        [Description("The power")] double power
+        [Description("The number")] double number1,
+        [Description("The power")] double number2
     )
     {
-        return System.Math.Pow(number, power);
+        return System.Math.Pow(number1, number2);
+    }
+
+    [SKFunction, Description("Get a rounded number. For example {{Math_Round number=5.5}} will return 6.")]
+    public double Round(
+        [Description("The number")] double number
+    )
+    {
+        return System.Math.Round(number);
     }
 }
