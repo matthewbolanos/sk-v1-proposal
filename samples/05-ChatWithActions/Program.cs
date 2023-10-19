@@ -44,7 +44,7 @@ Console.WriteLine(plan);
 
 Console.WriteLine();
 
-// Run the plan
+// Run the plan (Results are not likely to be correct because this sample is using mock functions)
 var result = await plan.InvokeAsync(kernel, kernel.CreateNewContext(), new Dictionary<string, object>());
 
 
