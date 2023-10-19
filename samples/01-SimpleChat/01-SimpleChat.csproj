@@ -23,6 +23,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../../src/extensions/AIFunction/AIFunction.csproj" />
+    <ProjectReference Include="../../src/extensions/SKHandlebars/SKHandlebars.csproj" />
   </ItemGroup>
 </Project>

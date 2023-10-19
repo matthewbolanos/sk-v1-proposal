@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
-    <RootNamespace></RootNamespace>
+    <RootNamespace>Microsoft.SemanticKernel.Handlebars</RootNamespace>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
   </PropertyGroup>
@@ -18,5 +18,11 @@
     <PackageReference Include="Microsoft.Extensions.Configuration.Binder" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" />
     <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="HandlebarPlanner.prompt.yaml">
+        <LogicalName>HandlebarPlanner.prompt.yaml</LogicalName>
+    </EmbeddedResource>
   </ItemGroup>
 </Project>

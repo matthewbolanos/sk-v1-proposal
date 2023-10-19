@@ -1,5 +1,6 @@
 ﻿
 using Microsoft.SemanticKernel;
+using Microsoft.SemanticKernel.Handlebars;
 using Microsoft.SemanticKernel.AI.ChatCompletion;
 
 string AzureOpenAIDeploymentName = Env.Var("AzureOpenAI:ChatCompletionDeploymentName")!;
@@ -8,7 +9,7 @@ string AzureOpenAIApiKey = Env.Var("AzureOpenAI:ApiKey")!;
 
 // Initialize all necessary functions
 var currentDirectory = Directory.GetCurrentDirectory();
-AIFunction chatFunction = AIFunction.FromYaml(currentDirectory + "/Plugins/ChatPlugin/PersonaChat.prompt.yaml");
+HandlebarsAIFunction chatFunction = HandlebarsAIFunction.FromYaml("Chat", currentDirectory + "/Plugins/ChatPlugin/PersonaChat.prompt.yaml");
 
 // Create new kernel
 IKernel kernel = new KernelBuilder()
@@ -32,13 +33,13 @@ while(true)
     chatHistory.AddUserMessage(Console.ReadLine()!);
 
     // Run the simple chat flow
-    var result = await kernel.RunAsync(
+    var result = kernel.RunFlow(
         variables: new()
         {
             { "persona", "You are a snarky (yet helpful) teenage assistant. Make sure to use hip slang in every response." },
             { "messages", chatHistory }
         },
-        "SimpleChat(messages=messages,persona=persona)"
+        "Chat_SimpleChat(messages=messages,persona=persona)"
     );
 
     Console.WriteLine("Assistant > " + result);

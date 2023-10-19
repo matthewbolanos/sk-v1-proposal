@@ -1,9 +1,9 @@
 // Copyright (c) Microsoft. All rights reserved.
 using YamlDotNet.Serialization;
 
-namespace Microsoft.SemanticKernel;
+namespace Microsoft.SemanticKernel.Handlebars;
 
-internal sealed class AIFunctionModel
+internal sealed class HandlebarsAIFunctionModel
 {
     [YamlMember(Alias = "name")]
     public string Name { get; set; }
@@ -19,16 +19,16 @@ internal sealed class AIFunctionModel
 
 
     [YamlMember(Alias = "input_variables")]
-    public List<SKVariableView> InputVariables { get; set; }
+    public List<HandlebarsAIVariableView> InputVariables { get; set; }
 
     [YamlMember(Alias = "output_variable")]
-    public SKVariableView OutputVariable { get; set; }
+    public HandlebarsAIVariableView OutputVariable { get; set; }
 
     [YamlMember(Alias = "models")]
     public Dictionary<string, Dictionary<string, object>> Models { get; set; }
 }
 
-public class SKVariableView
+public class HandlebarsAIVariableView
 {
     [YamlMember(Alias = "name")]
     public string Name { get; set;   }

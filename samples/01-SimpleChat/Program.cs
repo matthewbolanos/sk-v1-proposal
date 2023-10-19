@@ -1,6 +1,7 @@
 ﻿
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.AI.ChatCompletion;
+using Microsoft.SemanticKernel.Handlebars;
 
 string AzureOpenAIDeploymentName = Env.Var("AzureOpenAI:ChatCompletionDeploymentName")!;
 string AzureOpenAIEndpoint = Env.Var("AzureOpenAI:Endpoint")!;
@@ -8,7 +9,7 @@ string AzureOpenAIApiKey = Env.Var("AzureOpenAI:ApiKey")!;
 
 // Initialize all necessary functions
 var currentDirectory = Directory.GetCurrentDirectory();
-AIFunction chatFunction = AIFunction.FromYaml(currentDirectory + "/Plugins/ChatPlugin/SimpleChat.prompt.yaml");
+HandlebarsAIFunction chatFunction = HandlebarsAIFunction.FromYaml("Chat", currentDirectory + "/Plugins/ChatPlugin/SimpleChat.prompt.yaml");
 
 // Create new kernel
 IKernel kernel = new KernelBuilder()
@@ -32,12 +33,12 @@ while(true)
     chatHistory.AddUserMessage(Console.ReadLine()!);
 
     // Run the simple chat flow
-    var result = await kernel.RunAsync(
+    var result = kernel.RunFlow(
         variables: new()
         {
             { "messages", chatHistory }
         },
-        "SimpleChat(messages=messages)"
+        "Chat_SimpleChat(messages=messages)"
     );
 
     Console.WriteLine("Assistant > " + result);

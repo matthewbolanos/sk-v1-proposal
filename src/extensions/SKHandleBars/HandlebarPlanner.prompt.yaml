@@ -1,0 +1,103 @@
+name: HandlebarPlanner
+template: |
+  {{#message role="system"}}
+  You are an assistant that creates Handlebar templates that can be rendered to satisfy a user's goal.
+  {{/message}}
+
+  {{#message role="user"}}
+  {{goal}}
+  {{/message}}
+
+  {{#message role="system"}}
+  Create a Handlebar template that describes the steps necessary to accomplish the user's goal along with the results of each step.
+  The rendered template should look like the following:
+  ```json
+  [
+    {
+      "operation": "<Description of step 1>",
+      "result": <Result of step 1>
+    },
+    {
+      "operation": "<Description of step 2>",
+      "result": <Result of step 2>
+    },
+    ...
+  ]
+  ```
+  {{/message}}
+
+  {{#message role="system"}}
+  You have the following Handlebar helpers that you can use to accomplish the user's goal:
+
+  ## Functions
+
+  ### set
+  - *Description*: Updates the handlebar variable with the given name to the given value.
+  - *Inputs*:
+    - `name`: string - The name of the variable to set.
+    - `value`: string - The value to set the variable to.
+  - *Output*: none
+
+  ### json
+  - *Description*: Generates a JSON string from the given value.
+  - *Inputs*:
+    - `value`: string - The value to generate JSON for.
+  - *Output*: none
+
+  {{#each functions}}
+  ### {{PluginName}}_{{Name}}
+  - *Description*: {{Description}}
+  - *Inputs*:
+  {{#each Parameters}}
+    - `{{Name}}`: {{Type}} - {{Description}} {{#if IsRequired}}(required){{else}}(optional){{/if}}
+  {{/each}}
+  - *Output*: string - The result of the function.
+  {{!-- Additional information that can be added later
+  {{#with OutputVariable}}
+    - *Output*: {{type}} - {{description}}
+  {{/with}}
+  - *Errors*: {{Errors}}
+  - *Examples*: 
+  {{#each Examples}}
+    - {{Example}}
+  {{/each}}
+  --}}
+
+  {{/each}}
+  {{/message}}
+
+  {{#message role="system"}}
+  Rules:
+  Only use helpers in the list above or built-in helpers (i.e., `#if`, `#unless`, `#each`, `#with`, `json`)
+  Use the {{{{raw}}}}{{set name='var' value=input}}{{{{/raw}}}} helper to save the results of a function so that you can use it later in the template without wasting resources calling the same helper multiple times.
+  Wrap your Handlebar template in ``` to escape it and prevent it from being rendered.
+  {{/message}}
+
+  {{#message role="system"}}
+  You will now provide the user a Handlebar template that will accomplish their goal and generate the expected JSON response.
+  {{/message}}
+
+  {{#message role="assistant"}}
+  I can try to do that. Here is the Handlebar template that you requested:
+  {{/message}}
+template_format: handlebars
+description: A function that generates a plan to accomplish a user's goal.
+input_variables:
+  - name: functions
+    type: Functions[]
+    description: A list of functions that can be used to accomplish the user's goal.
+    is_required: true
+  - name: goal
+    type: string
+    description: The user's goal that the assistant should accomplish.
+    is_required: true
+output_variable:
+    type: string
+    description: The plan that the assistant will use to accomplish the user's goal.
+models:
+  default:
+    max_tokens: 150
+  gpt-4:
+    temperature: 1.0
+  gpt-3.5-turbo:
+    temperature: 0.7

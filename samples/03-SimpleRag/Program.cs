@@ -1,6 +1,7 @@
 ﻿
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.AI.ChatCompletion;
+using Microsoft.SemanticKernel.Handlebars;
 
 string AzureOpenAIDeploymentName = Env.Var("AzureOpenAI:ChatCompletionDeploymentName")!;
 string AzureOpenAIEndpoint = Env.Var("AzureOpenAI:Endpoint")!;
@@ -22,12 +23,12 @@ IKernel kernel = new KernelBuilder()
 
 // TODO: AddFunctions() should be a method of the KernelBuilder
 kernel.AddFunctions("Chat",
-    AIFunction.FromYaml(currentDirectory + "/Plugins/ChatPlugin/GroundedChat.prompt.yaml"),
-    AIFunction.FromYaml(currentDirectory + "/Plugins/ChatPlugin/GroundedChatComplete.prompt.yaml"),
-    AIFunction.FromYaml(currentDirectory + "/Plugins/ChatPlugin/GetSearchQuery.prompt.yaml")
+    HandlebarsAIFunction.FromYaml("Chat", currentDirectory + "/Plugins/ChatPlugin/GroundedChat.prompt.yaml"),
+    HandlebarsAIFunction.FromYaml("Chat",currentDirectory + "/Plugins/ChatPlugin/GroundedChatComplete.prompt.yaml"),
+    HandlebarsAIFunction.FromYaml("Chat",currentDirectory + "/Plugins/ChatPlugin/GetSearchQuery.prompt.yaml")
 );
 // TODO: This should use the AddFunctions() method
-kernel.ImportFunctions(new Search(BingApiKey), "_GLOBAL_FUNCTIONS_");
+kernel.ImportFunctions(new Search(BingApiKey), "Search");
 
 // Initialize a chat history
 ChatHistory chatHistory = new();
@@ -38,25 +39,25 @@ while (true)
     chatHistory.AddUserMessage(Console.ReadLine()!);
 
     // Run the simple chat flow using multiple functions
-    // var result = await kernel.RunAsync(
+    // var result = kernel.RunFlow(
     //     variables: new()
     //     {
     //         { "persona", "You are a snarky (yet helpful) teenage assistant. Make sure to use hip slang in every response." },
     //         { "messages", chatHistory }
     //     },
-    //     "intent = GetSearchQuery(messages=messages)",
-    //     "result = Search(query=intent)",
-    //     "GroundedChat(messages=messages, persona=persona, grounding=result)"
+    //     "intent = Chat_GetSearchQuery(messages=messages)",
+    //     "result = Search_Search(query=intent)",
+    //     "Chat_GroundedChat(messages=messages, persona=persona, grounding=result)"
     // );
 
     // Run the simple chat flow from a single handlebars template
-    var result = await kernel.RunAsync(
+    var result = kernel.RunFlow(
         variables: new()
         {
             { "persona", "You are a snarky (yet helpful) teenage assistant. Make sure to use hip slang in every response." },
             { "messages", chatHistory }
         },
-        "GroundedChatComplete(messages=messages, persona=persona)"
+        "Chat_GroundedChatComplete(messages=messages, persona=persona)"
     );
 
     Console.WriteLine("Assistant > " + result);
