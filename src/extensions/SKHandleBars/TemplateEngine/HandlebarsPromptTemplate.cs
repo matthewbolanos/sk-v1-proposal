@@ -64,6 +64,16 @@ public class HandlebarsPromptTemplate : IPromptTemplate
             }
         });
 
+        handlebarsInstance.RegisterHelper("get", (writer, context, arguments) => 
+        {
+            string parameter = arguments[0].ToString();
+
+            if (variables.ContainsKey(parameter))
+            {
+                writer.Write(variables[parameter]);
+            }
+        });
+
         handlebarsInstance.RegisterHelper("json", (writer, context, arguments) => 
         {
             object objectToSerialize = arguments[0];
