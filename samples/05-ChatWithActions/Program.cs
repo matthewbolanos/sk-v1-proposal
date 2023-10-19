@@ -1,12 +1,10 @@
 ﻿
 using Microsoft.SemanticKernel;
-using Microsoft.SemanticKernel.AI.ChatCompletion;
 using Microsoft.SemanticKernel.Handlebars;
 
 string AzureOpenAIDeploymentName = Env.Var("AzureOpenAI:ChatCompletionDeploymentName")!;
 string AzureOpenAIEndpoint = Env.Var("AzureOpenAI:Endpoint")!;
 string AzureOpenAIApiKey = Env.Var("AzureOpenAI:ApiKey")!;
-string BingApiKey = Env.Var("Bing:ApiKey")!;
 
 // Get the current directory
 var currentDirectory = Directory.GetCurrentDirectory();
@@ -25,7 +23,7 @@ kernel.ImportFunctions(new Math(), "Math");
 
 // Create a plan
 var planner = new HandlebarsPlanner(kernel);
-var plan = planner.CreatePlan("What is 5+(10*5)?");
+var plan = planner.CreatePlan("What is 5+(10*5)?", new List<string>(){"Math"});
 
 Console.WriteLine("Plan:");
 Console.WriteLine(plan);

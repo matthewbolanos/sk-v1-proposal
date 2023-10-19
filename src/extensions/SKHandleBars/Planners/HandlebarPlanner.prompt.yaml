@@ -27,12 +27,14 @@ template: |
   - Only use helpers in the list below or the built-in helpers in Handlebars (i.e., `#if`, `#unless`, `#each`, `#with`)
   - Use the {{{{raw}}}}{{set name='var' value=input}}{{{{/raw}}}} helper to save the results of a function so that you can use it later in the template without wasting resources calling the same helper multiple times.
   - Wrap your Handlebar template in ``` to escape it and prevent it from being rendered.
+  - There are no initial variables available to you. You must create them yourself using the `set` helper.
+  - You must always use hash arguments for the custom helpers otherwise the template will not render correctly.
 
   ## Helpers
   You have the following Handlebar helpers that you can use to accomplish the user's goal:
 
   ### set
-  - *Description*: Updates the handlebar variable with the given name to the given value.
+  - *Description*: Updates the handlebar variable with the given name to the given value. It does not print anything to the screen.
   - *Inputs*:
     - `name`: string - The name of the variable to set.
     - `value`: string - The value to set the variable to.

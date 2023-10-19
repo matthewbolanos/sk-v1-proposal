@@ -54,7 +54,14 @@ public class HandlebarsPromptTemplate : IPromptTemplate
             // Get the parameters from the template arguments
             var parameters = arguments[0] as IDictionary<string, object>;
 
-            variables.Add((string)parameters!["name"], parameters["value"]);
+            if (variables.ContainsKey((string)parameters!["name"]))
+            {
+                variables[(string)parameters!["name"]] = parameters["value"];
+            }
+            else
+            {
+                variables.Add((string)parameters!["name"], parameters["value"]);
+            }
         });
 
         handlebarsInstance.RegisterHelper("json", (writer, context, arguments) => 
@@ -63,6 +70,17 @@ public class HandlebarsPromptTemplate : IPromptTemplate
             string json = JsonSerializer.Serialize(objectToSerialize);
 
             writer.Write(json);
+        });
+
+        handlebarsInstance.RegisterHelper("eq", (writer, context, arguments) => 
+        {
+            object left = arguments[0];
+            object right = arguments[1];
+
+            if (left.Equals(right))
+            {
+                writer.Write("True");
+            }
         });
 
         handlebarsInstance.RegisterHelper("raw", (writer, options, context, arguments) => {

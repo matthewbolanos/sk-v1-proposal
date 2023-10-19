@@ -34,7 +34,17 @@ public sealed class HandlebarsPlanner
         );
 
         // Get functions
-        var functions = this.Kernel.Functions.GetFunctionViews().Where(f => f.PluginName != "Planner").ToList();
+        var functions = this.Kernel.Functions.GetFunctionViews().Where(f => 
+        {
+            if (plugins == null)
+            {
+                return f.PluginName != "Planner";
+            }
+            else
+            {
+                return plugins.Contains(f.PluginName);
+            }
+        }).ToList();
 
         // Generate the plan
         var result = this.Kernel.RunFlow(
