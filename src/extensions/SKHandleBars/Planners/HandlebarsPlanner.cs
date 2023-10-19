@@ -14,13 +14,13 @@ public sealed class HandlebarsPlanner
         this.Kernel = kernel;
     }
 
-    public HandlebarsPlan CreatePlan(string goal, CancellationToken cancellationToken = default)
+    public HandlebarsPlan CreatePlan(string goal, IEnumerable<string>? plugins = null, CancellationToken cancellationToken = default)
     {
         string plannerTemplate;
 
         Assembly assembly = Assembly.GetExecutingAssembly();
-        using (Stream stream = assembly.GetManifestResourceStream("HandlebarPlanner.prompt.yaml"))
-        using (StreamReader reader = new StreamReader(stream))
+        using (Stream stream = assembly.GetManifestResourceStream("HandlebarPlanner.prompt.yaml")!)
+        using (StreamReader reader = new(stream))
         {
             plannerTemplate = reader.ReadToEnd();
         }

@@ -1,35 +1,35 @@
 name: HandlebarPlanner
 template: |
   {{#message role="system"}}
-  You are an assistant that creates Handlebar templates that can be rendered to satisfy a user's goal.
-  {{/message}}
-
-  {{#message role="user"}}
-  {{goal}}
-  {{/message}}
-
-  {{#message role="system"}}
+  ## Instructions
   Create a Handlebar template that describes the steps necessary to accomplish the user's goal along with the results of each step.
   The rendered template should look like the following:
   ```json
-  [
-    {
-      "operation": "<Description of step 1>",
-      "result": <Result of step 1>
-    },
-    {
-      "operation": "<Description of step 2>",
-      "result": <Result of step 2>
-    },
-    ...
-  ]
+  {
+    operations: [
+      {
+        "operation": "<Description of step 1>",
+        "result": <Result of step 1>
+      },
+      {
+        "operation": "<Description of step 2>",
+        "result": <Result of step 2>
+      },
+      ...
+    ],
+    result: <Result of the last step>,
+    response: <Response to the user>
+  }
+  
   ```
-  {{/message}}
+  
+  ## Rules
+  - Only use helpers in the list below or the built-in helpers in Handlebars (i.e., `#if`, `#unless`, `#each`, `#with`)
+  - Use the {{{{raw}}}}{{set name='var' value=input}}{{{{/raw}}}} helper to save the results of a function so that you can use it later in the template without wasting resources calling the same helper multiple times.
+  - Wrap your Handlebar template in ``` to escape it and prevent it from being rendered.
 
-  {{#message role="system"}}
+  ## Helpers
   You have the following Handlebar helpers that you can use to accomplish the user's goal:
-
-  ## Functions
 
   ### set
   - *Description*: Updates the handlebar variable with the given name to the given value.
@@ -62,19 +62,15 @@ template: |
     - {{Example}}
   {{/each}}
   --}}
-
   {{/each}}
   {{/message}}
 
   {{#message role="system"}}
-  Rules:
-  Only use helpers in the list above or built-in helpers (i.e., `#if`, `#unless`, `#each`, `#with`, `json`)
-  Use the {{{{raw}}}}{{set name='var' value=input}}{{{{/raw}}}} helper to save the results of a function so that you can use it later in the template without wasting resources calling the same helper multiple times.
-  Wrap your Handlebar template in ``` to escape it and prevent it from being rendered.
+  Take a deep breath and use these instructions to provide the user with a Handlebar template that will accomplish their goal.
   {{/message}}
 
-  {{#message role="system"}}
-  You will now provide the user a Handlebar template that will accomplish their goal and generate the expected JSON response.
+  {{#message role="user"}}
+  {{goal}}
   {{/message}}
 
   {{#message role="assistant"}}

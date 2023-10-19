@@ -5,6 +5,7 @@ using Microsoft.SemanticKernel.AI.ChatCompletion;
 using Microsoft.SemanticKernel.Services;
 using Microsoft.SemanticKernel.AI;
 using Microsoft.SemanticKernel.TemplateEngine;
+using System.Text.Json;
 
 namespace Microsoft.SemanticKernel.Handlebars;
 
@@ -58,7 +59,10 @@ public class HandlebarsPromptTemplate : IPromptTemplate
 
         handlebarsInstance.RegisterHelper("json", (writer, context, arguments) => 
         {
-            
+            object objectToSerialize = arguments[0];
+            string json = JsonSerializer.Serialize(objectToSerialize);
+
+            writer.Write(json);
         });
 
         handlebarsInstance.RegisterHelper("raw", (writer, options, context, arguments) => {

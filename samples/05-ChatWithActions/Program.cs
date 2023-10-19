@@ -21,32 +21,52 @@ IKernel kernel = new KernelBuilder()
     )
     .Build();
 
-kernel.ImportFunctions(new Todo(), "Todo");
+kernel.ImportFunctions(new Math(), "Math");
 
 // Create a plan
 var planner = new HandlebarsPlanner(kernel);
-var plan = planner.CreatePlan("Delete all of the todo items that are about taking out the trash.");
+var plan = planner.CreatePlan("What is 5+(10*5)?");
 
 Console.WriteLine("Plan:");
 Console.WriteLine(plan);
 
-// The plan should look something like the following
-// [
-//   {{#each (Todo_Search query="take out the trash") as |todo|}}
-//     {{#with (Todo_Delete id=todo.id) as |deletedTodo|}}
-//       {
-//         "operation": "Delete todo item with ID {{todo.id}}",
-//         "result": {{json deletedTodo}}
-//       },
-//     {{/with}}
-//   {{/each}}
-// ]
+// {{#set name="result1" value=(Math_Multiply number1=10 number2=5)}}
+// {{#set name="result2" value=(Math_Add number1=5 number2=result1)}}
+// {
+//   "operations": [
+//     {
+//       "operation": "Multiply 10 by 5",
+//       "result": {{json result1}}
+//     },
+//     {
+//       "operation": "Add 5 to the result",
+//       "result": {{json result2}}
+//     }
+//   ],
+//   "result": {{json result2}},
+//   "response": "The result of 5+(10*5) is {{result2}}"
+// }
 
 Console.WriteLine();
 
 // Run the plan (Results are not likely to be correct because this sample is using mock functions)
 var result = await plan.InvokeAsync(kernel, kernel.CreateNewContext(), new Dictionary<string, object>());
 
-
 Console.WriteLine("Result:");
 Console.WriteLine(result);
+
+// Result:
+// {
+//   "operations": [
+//     {
+//       "operation": "Multiply 10 by 5",
+//       "result": "50"
+//     },
+//     {
+//       "operation": "Add 5 to the result",
+//       "result": "55"
+//     }
+//   ],
+//   "result": "55",
+//   "response": "The result of 5+(10*5) is 55"
+// }
