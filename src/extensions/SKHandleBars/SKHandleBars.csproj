@@ -21,7 +21,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="HandlebarPlanner.prompt.yaml">
+    <EmbeddedResource Include="Planners/HandlebarPlanner.prompt.yaml">
         <LogicalName>HandlebarPlanner.prompt.yaml</LogicalName>
     </EmbeddedResource>
   </ItemGroup>
