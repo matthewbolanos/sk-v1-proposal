@@ -62,7 +62,7 @@ template: |
   {{/message}}
 
   {{#message role="system"}}
-  What if I had tripled them instead?
+  What if I had tripled them or quadrupled them instead?
   {{/message}}
 
   {{#message role="system"}}
