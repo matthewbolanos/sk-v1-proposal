@@ -11,7 +11,7 @@ using Microsoft.SemanticKernel.Planners;
 
 namespace Microsoft.SemanticKernel.Handlebars;
 
-public static class KernelAIFunctionExtensions
+public static class HandleBarsKernelExtensions
 {
     public static void AddFunctions(
         this IKernel kernel,
