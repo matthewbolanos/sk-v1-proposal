@@ -1,4 +1,4 @@
-name: SimpleChat
+name: PersonaChat
 template: |
   {{#message role="system"}}
   {{persona}}

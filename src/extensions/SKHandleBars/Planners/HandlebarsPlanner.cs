@@ -25,7 +25,7 @@ public sealed class HandlebarsPlanner
             plannerTemplate = reader.ReadToEnd();
         }
 
-        this.Kernel.AddFunctions("Planner",
+        this.Kernel.AddFunction("Planner",
             HandlebarsAIFunction.FromYamlContent(
                 "Planner",
                 plannerTemplate,
@@ -47,13 +47,13 @@ public sealed class HandlebarsPlanner
         }).ToList();
 
         // Generate the plan
-        var result = this.Kernel.RunFlow(
+        var result = this.Kernel.RunAsync(
+            "Planner.HandlebarPlanner",
             variables: new()
             {
                 { "functions", functions},
                 { "goal", goal }
-            },
-            "Planner_HandlebarPlanner(functions=functions, goal=goal)"
+            }
         );
 
         Match match = Regex.Match(result, @"```\s*(handlebars)?\s+(.*?)\s+```", RegexOptions.Singleline);

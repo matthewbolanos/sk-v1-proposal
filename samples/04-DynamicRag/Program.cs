@@ -1,6 +1,7 @@
 ﻿
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.AI.ChatCompletion;
+using Microsoft.SemanticKernel.Connectors.AI.OpenAI.ChatCompletion;
 using Microsoft.SemanticKernel.Handlebars;
 
 string AzureOpenAIDeploymentName = Env.Var("AzureOpenAI:ChatCompletionDeploymentName")!;
@@ -10,21 +11,26 @@ string AzureOpenAIApiKey = Env.Var("AzureOpenAI:ApiKey")!;
 // Get the current directory
 var currentDirectory = Directory.GetCurrentDirectory();
 
+// Create chat plugin
+Plugin chatPlugin = new Plugin(
+    "Chat",
+    new () {
+        HandlebarsAIFunction.FromYaml("Chat", currentDirectory + "/Plugins/ChatPlugin/Chat.prompt.yaml"),
+        HandlebarsAIFunction.FromYaml("Chat",currentDirectory + "/Plugins/ChatPlugin/GenerateMathProblem.prompt.yaml"),
+        HandlebarsAIFunction.FromYaml("Chat",currentDirectory + "/Plugins/ChatPlugin/GetNextStep.prompt.yaml")
+    }
+);
+
+// Initialize all necessary services outside of the kernel
+IChatCompletion service = new AzureChatCompletion("gpt-35-turbo", AzureOpenAIEndpoint, AzureOpenAIApiKey);
+
 // Create new kernel
 IKernel kernel = new KernelBuilder()
-    .WithAzureChatCompletionService(
-        AzureOpenAIDeploymentName,  // The name of your deployment (e.g., "gpt-35-turbo")
-        AzureOpenAIEndpoint,        // The endpoint of your Azure OpenAI service
-        AzureOpenAIApiKey,          // The API key of your Azure OpenAI service
-        serviceId: "gpt-35-turbo"   // The service ID of your Azure OpenAI service
-    )
+    .WithAIService("gpt-35-turbo", service)
     .Build();
 
-kernel.AddFunctions("Chat",
-    HandlebarsAIFunction.FromYaml("Chat", currentDirectory + "/Plugins/ChatPlugin/Chat.prompt.yaml"),
-    HandlebarsAIFunction.FromYaml("Chat",currentDirectory + "/Plugins/ChatPlugin/GenerateMathProblem.prompt.yaml"),
-    HandlebarsAIFunction.FromYaml("Chat",currentDirectory + "/Plugins/ChatPlugin/GetNextStep.prompt.yaml")
-);
+// TODO: These should be functions of the builder
+kernel.AddPlugin(chatPlugin);
 kernel.ImportFunctions(new Math(), "Math");
 kernel.RegisterCustomFunction(SKFunction.FromNativeFunction(
     async (string math_problem) =>  {
@@ -52,12 +58,11 @@ while (true)
     chatHistory.AddUserMessage(Console.ReadLine()!);
 
     // Run the simple chat flow from a single handlebars template
-    var result = kernel.RunFlow(
+    var result = kernel.RunAsync("Chat_Chat",
         variables: new()
         {
             { "messages", chatHistory }
-        },
-        "Chat_Chat(messages=messages)"
+        }
     );
 
     Console.WriteLine("Assistant > " + result);

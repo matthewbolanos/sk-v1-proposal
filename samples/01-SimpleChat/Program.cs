@@ -1,29 +1,29 @@
 ﻿
 using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.AI.ChatCompletion;
+using Microsoft.SemanticKernel.Connectors.AI.OpenAI.ChatCompletion;
 using Microsoft.SemanticKernel.Handlebars;
+using Microsoft.SemanticKernel.Services;
 
 string AzureOpenAIDeploymentName = Env.Var("AzureOpenAI:ChatCompletionDeploymentName")!;
 string AzureOpenAIEndpoint = Env.Var("AzureOpenAI:Endpoint")!;
 string AzureOpenAIApiKey = Env.Var("AzureOpenAI:ApiKey")!;
 
-// Initialize all necessary functions
+// Initialize all necessary functions outside of the kernel
 var currentDirectory = Directory.GetCurrentDirectory();
-
 HandlebarsAIFunction chatFunction = HandlebarsAIFunction.FromYaml("Chat", currentDirectory + "/Plugins/ChatPlugin/SimpleChat.prompt.yaml");
+
+// Initialize all necessary services outside of the kernel
+IChatCompletion service = new AzureChatCompletion("gpt-35-turbo", AzureOpenAIEndpoint, AzureOpenAIApiKey);
 
 // Create new kernel
 IKernel kernel = new KernelBuilder()
-    .WithAzureChatCompletionService(
-        AzureOpenAIDeploymentName,  // The name of your deployment (e.g., "gpt-35-turbo")
-        AzureOpenAIEndpoint,        // The endpoint of your Azure OpenAI service
-        AzureOpenAIApiKey,          // The API key of your Azure OpenAI service
-        serviceId: "gpt-35-turbo"   // The service ID of your Azure OpenAI service
-    )
+    .WithAIService("gpt-35-turbo", service)
+    //.WithDefaultFunction(chatFunction)
     .Build();
 
-// TODO: AddFunctions() should be a method of the KernelBuilder
-kernel.AddFunctions("Chat", chatFunction);
+// TODO: This should be a method of the KernelBuilder
+kernel.AddFunction("Chat", chatFunction);
 
 // Initialize a chat history
 ChatHistory chatHistory = new();
@@ -34,12 +34,11 @@ while(true)
     chatHistory.AddUserMessage(Console.ReadLine()!);
 
     // Run the simple chat flow
-    var result = kernel.RunFlow(
+    var result = kernel.RunAsync("Chat.SimpleChat",
         variables: new()
         {
             { "messages", chatHistory }
-        },
-        "Chat_SimpleChat(messages=messages)"
+        }
     );
 
     Console.WriteLine("Assistant > " + result);
