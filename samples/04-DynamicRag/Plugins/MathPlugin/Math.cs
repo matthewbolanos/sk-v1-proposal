@@ -12,10 +12,10 @@ public class Math
     {
     }
 
-    [SKFunction, Description("Solve a math problems")]
+    [SKFunction, Description("Uses functions from the Math plugin to solve math problems.")]
     public async Task<string> PerformMath(
         IKernel kernel,
-        [Description("A description of a math problem")] string math_problem
+        [Description("A description of a math problem; use the GenerateMathProblem function to create one.")] string math_problem
     )
     {
         // Create a plan
