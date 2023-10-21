@@ -267,6 +267,9 @@ public sealed class NativeFunction : ISKFunction, IDisposable
 
         string? description = method.GetCustomAttribute<DescriptionAttribute>(inherit: true)?.Description;
 
+        // Output
+        // Examples
+
         var result = new MethodDetails
         {
             Name = functionName!,
