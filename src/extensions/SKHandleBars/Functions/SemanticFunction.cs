@@ -11,10 +11,11 @@ using Microsoft.SemanticKernel.Services;
 using YamlDotNet.Serialization;
 using Microsoft.SemanticKernel.AI.ChatCompletion;
 using System.Text.RegularExpressions;
+using Microsoft.SemanticKernel.TemplateEngine;
 
 namespace Microsoft.SemanticKernel.Handlebars;
 
-public sealed class HandlebarsAIFunction : ISKFunction, IDisposable
+public sealed class SemanticFunction : ISKFunction, IDisposable
 {
     public string Name { get; }
 
@@ -22,18 +23,16 @@ public sealed class HandlebarsAIFunction : ISKFunction, IDisposable
 
     public string Description { get; }
 
-    public static HandlebarsAIFunction FromYaml(
-        string pluginName,
+    public static SemanticFunction GetFunctionFromYaml(
         string filepath,
         ILoggerFactory? loggerFactory = null,
         CancellationToken cancellationToken = default)
     {
         var yamlContent = File.ReadAllText(filepath);
-        return FromYamlContent(pluginName, yamlContent, loggerFactory, cancellationToken);
+        return GetFunctionFromYamlContent(yamlContent, loggerFactory, cancellationToken);
     }
 
-    public static HandlebarsAIFunction FromYamlContent(
-        string pluginName,
+    public static SemanticFunction GetFunctionFromYamlContent(
         string yamlContent,
         ILoggerFactory? loggerFactory = null,
         CancellationToken cancellationToken = default)
@@ -41,32 +40,26 @@ public sealed class HandlebarsAIFunction : ISKFunction, IDisposable
         var deserializer = new DeserializerBuilder()
             .Build();
 
-        var skFunction = deserializer.Deserialize<HandlebarsAIFunctionModel>(yamlContent);
+        var skFunction = deserializer.Deserialize<SemanticFunctionModel>(yamlContent);
 
 
         List<ParameterView> inputParameters = new List<ParameterView>();
         foreach(var inputParameter in skFunction.InputVariables)
         {
-            ParameterViewType parameterViewType;
+            Type parameterViewType;
             switch(inputParameter.Type)
             {
                 case "string":
-                    parameterViewType = ParameterViewType.String;
+                    parameterViewType = typeof(string);
                     break;
                 case "number":
-                    parameterViewType = ParameterViewType.Number;
+                    parameterViewType = typeof(double);
                     break;
                 case "boolean":
-                    parameterViewType = ParameterViewType.Boolean;
-                    break;
-                case "object":
-                    parameterViewType = ParameterViewType.Object;
-                    break;
-                case "array":
-                    parameterViewType = ParameterViewType.Array;
+                    parameterViewType = typeof(bool);
                     break;
                 default:
-                    parameterViewType = ParameterViewType.Object;
+                    parameterViewType = typeof(object);
                     break;
             }
 
@@ -79,8 +72,7 @@ public sealed class HandlebarsAIFunction : ISKFunction, IDisposable
             ));
         }
 
-        var func = new HandlebarsAIFunction(
-            pluginName: pluginName,
+        var func = new SemanticFunction(
             functionName: skFunction.Name,
             template: skFunction.Template,
             templateFormat: skFunction.TemplateFormat,
@@ -93,8 +85,7 @@ public sealed class HandlebarsAIFunction : ISKFunction, IDisposable
         return func;
     }
 
-    public HandlebarsAIFunction(
-        string pluginName,
+    public SemanticFunction(
         string functionName,
         string template,
         string templateFormat,
@@ -103,11 +94,11 @@ public sealed class HandlebarsAIFunction : ISKFunction, IDisposable
         // SKVariableView outputParameter,
         ILoggerFactory? loggerFactory = null)
     {
-        this._logger = loggerFactory is not null ? loggerFactory.CreateLogger(typeof(HandlebarsAIFunction)) : NullLogger.Instance;
+        this._logger = loggerFactory is not null ? loggerFactory.CreateLogger(typeof(SemanticFunction)) : NullLogger.Instance;
 
         // Add logic to use the right template engine based on the template format
-        this.PromptTemplate = new HandlebarsPromptTemplate(template);
-        this.PluginName = pluginName;
+        this.PromptTemplate = template;
+        this.PluginName = "";
 
         this.InputParameters = inputParameters;
 
@@ -134,11 +125,11 @@ public sealed class HandlebarsAIFunction : ISKFunction, IDisposable
     )
     {
         // TODO: make dynamic
-        IAIService client = kernel.GetService<IChatCompletion>("gpt-35-turbo");
+        IAIService client = kernel.GetService<IAIService>("gpt-3.5-turbo");
         FunctionResult result;
 
         // Render the prompt
-        string renderedPrompt = this.PromptTemplate.Render(kernel, executionContext, variables, cancellationToken);
+        string renderedPrompt = kernel.PromptTemplateEngine.Render(kernel, executionContext, PromptTemplate, variables, cancellationToken);
 
         if(client is IChatCompletion completion)
         {
@@ -171,7 +162,7 @@ public sealed class HandlebarsAIFunction : ISKFunction, IDisposable
             // Get the completions
             IReadOnlyList<IChatResult> completionResults = await completion.GetChatCompletionsAsync(chatMessages, cancellationToken: cancellationToken).ConfigureAwait(false);
             var modelResults = completionResults.Select(c => c.ModelResult).ToArray();
-            result = new FunctionResult(this.Name, this.PluginName, executionContext, modelResults[0].GetOpenAIChatResult().Choice.Message.Content);
+            result = new FunctionResult(this.Name, this.PluginName, modelResults[0].GetOpenAIChatResult().Choice.Message.Content);
             result.Metadata.Add(AIFunctionResultExtensions.ModelResultsMetadataKey, modelResults);
         }
         else
@@ -183,7 +174,7 @@ public sealed class HandlebarsAIFunction : ISKFunction, IDisposable
     }
 
     private readonly ILogger _logger;
-    private HandlebarsPromptTemplate PromptTemplate { get; }
+    private string PromptTemplate { get; }
 
     private IReadOnlyList<ParameterView> InputParameters { get; }
 
@@ -195,11 +186,6 @@ public sealed class HandlebarsAIFunction : ISKFunction, IDisposable
 
 
     public void Dispose()
-    {
-        throw new NotImplementedException();
-    }
-
-    public Task<FunctionResult> InvokeAsync(SKContext context, AIRequestSettings? requestSettings = null, CancellationToken cancellationToken = default)
     {
         throw new NotImplementedException();
     }
@@ -220,6 +206,16 @@ public sealed class HandlebarsAIFunction : ISKFunction, IDisposable
     }
 
     public ISKFunction SetDefaultSkillCollection(IReadOnlyFunctionCollection skills)
+    {
+        throw new NotImplementedException();
+    }
+
+    Task<Orchestration.FunctionResult> ISKFunction.InvokeAsync(SKContext context, AIRequestSettings? requestSettings, CancellationToken cancellationToken)
+    {
+        throw new NotImplementedException();
+    }
+
+    SemanticKernel.FunctionView ISKFunction.Describe()
     {
         throw new NotImplementedException();
     }

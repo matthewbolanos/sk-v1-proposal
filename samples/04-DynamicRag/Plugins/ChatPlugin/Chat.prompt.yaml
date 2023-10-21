@@ -6,11 +6,11 @@ template: |
     {{/message}}
   {{/each}}
 
-  {{set name="action" value=(Chat_GetNextStep messages=messages)}}
+  {{set name="action" value=(Intent_GetNextStep messages=messages)}}
 
   {{#if (eq action 'PerformMath')}}
     {{#message role="system"}}
-    {{Planner_PerformMath math_problem=(Chat_GenerateMathProblem messages=messages)}}
+    {{Math_PerformMath math_problem=(Math_GenerateMathProblem messages=messages)}}
     {{/message}}
   {{/if}}
 

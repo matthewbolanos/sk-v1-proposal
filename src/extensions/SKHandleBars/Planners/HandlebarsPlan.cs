@@ -17,20 +17,20 @@ namespace Microsoft.SemanticKernel.Handlebars;
 
 public sealed class HandlebarsPlan : IPlan
 {
-    private readonly IKernel Kernel;
-    private HandlebarsPromptTemplate PromptTemplate;
-    private string Template;
+    private readonly IKernel kernel;
+    private readonly string promptTemplate;
+    private readonly string template;
 
     public HandlebarsPlan(IKernel kernel, string template)
     {
-        this.Kernel = kernel;
-        this.Template = template;
-        PromptTemplate = new HandlebarsPromptTemplate(template);
+        this.kernel = kernel;
+        this.template = template;
+        promptTemplate = template;
     }
 
     public override string ToString()
     {
-        return Template;
+        return template;
     }
 
     public string Name => throw new NotImplementedException();
@@ -45,10 +45,6 @@ public sealed class HandlebarsPlan : IPlan
 
     public bool IsSemantic => throw new NotImplementedException();
 
-    public FunctionView Describe()
-    {
-        throw new NotImplementedException();
-    }
 
     public async Task<FunctionResult> InvokeAsync(
         IKernel kernel,
@@ -56,12 +52,12 @@ public sealed class HandlebarsPlan : IPlan
         Dictionary<string, object> variables,
         CancellationToken cancellationToken = default)
     {
-        string results = PromptTemplate.Render(kernel, executionContext, variables, cancellationToken);
+        string results = kernel.PromptTemplateEngine.Render(kernel, executionContext, template, variables, cancellationToken);
 
-        return new FunctionResult("Plan", "Planner", executionContext, results);
+        return new FunctionResult("Plan", "Planner", results);
     }
 
-    public Task<FunctionResult> InvokeAsync(SKContext context, AIRequestSettings? requestSettings = null, CancellationToken cancellationToken = default)
+    public Task<Orchestration.FunctionResult> InvokeAsync(SKContext context, AIRequestSettings? requestSettings = null, CancellationToken cancellationToken = default)
     {   
         throw new NotImplementedException();
     }
@@ -82,6 +78,11 @@ public sealed class HandlebarsPlan : IPlan
     }
 
     public ISKFunction SetDefaultSkillCollection(IReadOnlyFunctionCollection skills)
+    {
+        throw new NotImplementedException();
+    }
+
+    SemanticKernel.FunctionView ISKFunction.Describe()
     {
         throw new NotImplementedException();
     }

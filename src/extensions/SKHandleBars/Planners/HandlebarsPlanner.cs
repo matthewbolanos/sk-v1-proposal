@@ -9,12 +9,14 @@ public sealed class HandlebarsPlanner
 {
     private readonly IKernel Kernel;
 
-    public HandlebarsPlanner(IKernel kernel)
+    private readonly HandlebarsPlannerConfiguration Configuration;
+
+    public HandlebarsPlanner(IKernel kernel, HandlebarsPlannerConfiguration? configuration = default)
     {
         this.Kernel = kernel;
+        this.Configuration = configuration ?? new HandlebarsPlannerConfiguration();
     }
-
-    public HandlebarsPlan CreatePlan(string goal, IEnumerable<string>? plugins = null, CancellationToken cancellationToken = default)
+    public async Task<HandlebarsPlan> CreatePlanAsync(string goal, CancellationToken cancellationToken = default)
     {
         string plannerTemplate;
 
@@ -25,38 +27,52 @@ public sealed class HandlebarsPlanner
             plannerTemplate = reader.ReadToEnd();
         }
 
-        this.Kernel.AddFunction("Planner",
-            HandlebarsAIFunction.FromYamlContent(
-                "Planner",
-                plannerTemplate,
-                cancellationToken: cancellationToken
-            )
+        var plannerFunction = SemanticFunction.GetFunctionFromYamlContent(
+            plannerTemplate,
+            cancellationToken: cancellationToken
         );
 
         // Get functions
-        var functions = this.Kernel.Functions.GetFunctionViews().Where(f => 
+        var functions = ((Kernel)this.Kernel).GetFunctionViews().Where(f => 
         {
-            if (plugins == null)
+            var fullyQualifiedName = $"{f.PluginName}.{f.Name}";
+            bool shouldInclude = false;
+            if (Configuration.IncludedPlugins.Count == 0 && Configuration.IncludedFunctions.Count == 0)
             {
-                return f.PluginName != "Planner";
+                shouldInclude = true;
             }
-            else
+            
+            if (Configuration.IncludedPlugins.Contains(f.PluginName))
             {
-                return plugins.Contains(f.PluginName);
+                shouldInclude = true;
             }
+            if (Configuration.IncludedFunctions.Contains(fullyQualifiedName))
+            {
+                shouldInclude = true;
+            }
+            if (Configuration.ExcludedPlugins.Contains(f.PluginName))
+            {
+                shouldInclude = false;
+            }
+            if (Configuration.ExcludedFunctions.Contains(fullyQualifiedName))
+            {
+                shouldInclude = false;
+            }
+
+            return shouldInclude;
         }).ToList();
 
         // Generate the plan
-        var result = this.Kernel.RunAsync(
-            "Planner.HandlebarPlanner",
-            variables: new()
+        var result = await this.Kernel.RunAsync(
+            plannerFunction,
+            variables: new Dictionary<string, object>()
             {
                 { "functions", functions},
                 { "goal", goal }
             }
         );
 
-        Match match = Regex.Match(result, @"```\s*(handlebars)?\s+(.*?)\s+```", RegexOptions.Singleline);
+        Match match = Regex.Match(result.GetValue<string>()!, @"```\s*(handlebars)?\s+(.*?)\s+```", RegexOptions.Singleline);
 
         if (!match.Success)
         {
@@ -67,4 +83,24 @@ public sealed class HandlebarsPlanner
 
         return new HandlebarsPlan(Kernel, template);
     }
+}
+
+public class HandlebarsPlannerConfiguration
+{
+    public HandlebarsPlannerConfiguration(
+        List<string>? includedPlugins = default,
+        List<string>? excludedPlugins = default,
+        List<string>? includedFunctions = default,
+        List<string>? excludedFunctions = default
+    )
+    {
+        IncludedPlugins = includedPlugins ?? new List<string>();
+        ExcludedPlugins = excludedPlugins ?? new List<string>();
+        IncludedFunctions = includedFunctions ?? new List<string>();
+        ExcludedFunctions = excludedFunctions ?? new List<string>();
+    }
+    public List<string> IncludedPlugins { get; set; }
+    public List<string> ExcludedPlugins { get; set; }
+    public List<string> IncludedFunctions { get; set; }
+    public List<string> ExcludedFunctions { get; set; }
 }

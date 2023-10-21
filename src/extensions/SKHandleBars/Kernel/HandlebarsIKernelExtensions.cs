@@ -3,15 +3,12 @@
 
 #pragma warning disable IDE0130
 // ReSharper disable once CheckNamespace - Using the namespace of IKernel
-using System.Text.RegularExpressions;
-using Microsoft.SemanticKernel.AI;
-using Microsoft.SemanticKernel.AI.ChatCompletion;
+
 using Microsoft.SemanticKernel.Orchestration;
-using Microsoft.SemanticKernel.Planners;
 
 namespace Microsoft.SemanticKernel.Handlebars;
 
-public static class HandleBarsKernelExtensions
+public static class HandlebarsIKernelExtensions
 {
     public static void AddPlugin(
         this IKernel kernel,
@@ -31,32 +28,34 @@ public static class HandleBarsKernelExtensions
         kernel.RegisterCustomFunction(function);
     }
 
-    public static string RunAsync(
+    public static async Task<FunctionResult> RunAsync(
         this IKernel kernel,
-        string function,
+        ISKFunction function,
         Dictionary<string, object> variables
         )
     {
-        string template;
-
-        var nameParts = function.Split('.');
-        if (nameParts.Length == 1)
+        if (kernel is Kernel kernel2)
         {
-            template = "{{" + nameParts[0] + "}}";
-        }
-        else if (nameParts.Length == 2)
-        {
-            template = "{{" + nameParts[0] + "_" + nameParts[1] + "}}";
+            return await function.InvokeAsync(kernel, kernel.CreateNewContext(), variables);
         }
         else
         {
-            throw new Exception("Invalid function name.");
+            throw new Exception("Kernel is not a HandlebarsKernel.");
         }
+    }
 
-        // Create prompt template
-        var promptTemplate = new HandlebarsPromptTemplate(template);
-
-        // Run the prompt template
-        return promptTemplate.Render(kernel, kernel.CreateNewContext(), variables);
+    public static async Task<FunctionResult> RunAsync(
+        this IKernel kernel,
+        Dictionary<string, object> variables
+        )
+    {
+        if (kernel is Kernel kernel2 && kernel2.EntryPoint != null)
+        {
+            return await kernel2.RunAsync(kernel2.EntryPoint, variables);
+        }
+        else
+        {
+            throw new Exception("Entry point not provided.");
+        }
     }
 }

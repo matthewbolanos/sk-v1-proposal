@@ -3,7 +3,7 @@ using YamlDotNet.Serialization;
 
 namespace Microsoft.SemanticKernel.Handlebars;
 
-internal sealed class HandlebarsAIFunctionModel
+internal sealed class SemanticFunctionModel
 {
     [YamlMember(Alias = "name")]
     public string Name { get; set; }
@@ -19,16 +19,16 @@ internal sealed class HandlebarsAIFunctionModel
 
 
     [YamlMember(Alias = "input_variables")]
-    public List<HandlebarsAIVariableView> InputVariables { get; set; }
+    public List<VariableViewModel> InputVariables { get; set; }
 
     [YamlMember(Alias = "output_variable")]
-    public HandlebarsAIVariableView OutputVariable { get; set; }
+    public VariableViewModel OutputVariable { get; set; }
 
     [YamlMember(Alias = "models")]
     public Dictionary<string, Dictionary<string, object>> Models { get; set; }
 }
 
-public class HandlebarsAIVariableView
+public class VariableViewModel
 {
     [YamlMember(Alias = "name")]
     public string Name { get; set;   }

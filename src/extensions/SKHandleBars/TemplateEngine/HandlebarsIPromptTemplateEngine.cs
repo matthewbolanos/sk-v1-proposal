@@ -9,28 +9,25 @@ using System.Text.Json;
 
 namespace Microsoft.SemanticKernel.Handlebars;
 
-public class HandlebarsPromptTemplate : IPromptTemplate
+public class HandlebarsPromptTemplateEngine : IPromptTemplateEngine
 {
-    private readonly string template;
-    private readonly IHandlebars handlebarsInstance;
 
-    public HandlebarsPromptTemplate(string template)
+    public HandlebarsPromptTemplateEngine()
     {
-        this.handlebarsInstance = HandlebarsDotNet.Handlebars.Create(
+    }
+
+    public string Render(IKernel kernel, SKContext executionContext, string template, Dictionary<string,object> variables, CancellationToken cancellationToken = default)
+    {
+        IHandlebars handlebarsInstance = HandlebarsDotNet.Handlebars.Create(
             new HandlebarsConfiguration
             {
                 NoEscape = true
             });
-        this.template = template;
-    }
-
-    public string Render(IKernel kernel, SKContext executionContext, Dictionary<string,object> variables, CancellationToken cancellationToken = default)
-    {
 
         // Add helpers for each function
-        foreach (FunctionView function in executionContext.Functions.GetFunctionViews())
+        foreach (FunctionView function in ((Kernel)kernel).GetFunctionViews())
         {
-            RegisterFunctionAsHelper(kernel, executionContext, function, variables, cancellationToken);
+            RegisterFunctionAsHelper(kernel, executionContext, handlebarsInstance, function, variables, cancellationToken);
         }
 
         // Add system helpers
@@ -101,7 +98,7 @@ public class HandlebarsPromptTemplate : IPromptTemplate
         return compiledTemplate(variables);
     }
 
-    private void RegisterFunctionAsHelper(IKernel kernel, SKContext executionContext, FunctionView functionView, Dictionary<string,object> variables, CancellationToken cancellationToken = default)
+    private void RegisterFunctionAsHelper(IKernel kernel, SKContext executionContext, IHandlebars handlebarsInstance, FunctionView functionView, Dictionary<string,object> variables, CancellationToken cancellationToken = default)
     {
         string fullyResolvedFunctionName = functionView.PluginName + "_" + functionView.Name;
 
@@ -115,8 +112,12 @@ public class HandlebarsPromptTemplate : IPromptTemplate
                 // Prepare the input parameters for the function
                 foreach (var param in functionView.Parameters)
                 {
+                    if (param.Type == typeof(IKernel))
+                    {
+                        variables.Add(param.Name, kernel);
+                    }
                     // Check if parameters has key
-                    if (parameters?.ContainsKey(param.Name) == true)
+                    else if (parameters?.ContainsKey(param.Name) == true)
                     {
                         if (variables.ContainsKey(param.Name))
                         {
@@ -134,10 +135,10 @@ public class HandlebarsPromptTemplate : IPromptTemplate
                 }
             }
 
-            ISKFunction function = executionContext.Functions.GetFunction(functionView.PluginName, functionView.Name);
+            ISKFunction function = kernel.Functions.GetFunction(functionView.PluginName, functionView.Name);
             
             FunctionResult result;
-            if (function is HandlebarsAIFunction handlebarsAIFunction)
+            if (function is SemanticFunction handlebarsAIFunction)
             {
 
                 result = handlebarsAIFunction.InvokeAsync(
@@ -165,12 +166,8 @@ public class HandlebarsPromptTemplate : IPromptTemplate
 
     [Obsolete("Use Render() instead.")]
 
-    public Task<string> RenderAsync(SKContext executionContext, CancellationToken cancellationToken = default)
+    public Task<string> RenderAsync(string templateText, SKContext context, CancellationToken cancellationToken = default)
     {
         throw new NotImplementedException();
     }
-
-    [Obsolete("Parameters are no longer automatically generated. This will be removed in a future release.")]
-
-    public IReadOnlyList<ParameterView> Parameters => throw new NotImplementedException();
 }

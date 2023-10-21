@@ -1,52 +1,37 @@
 ﻿
-using Microsoft.SemanticKernel;
-using Microsoft.SemanticKernel.Handlebars;
 using Microsoft.SemanticKernel.AI.ChatCompletion;
-using Microsoft.SemanticKernel.Connectors.AI.OpenAI.ChatCompletion;
+using Microsoft.SemanticKernel.Handlebars;
+using ISKFunction = Microsoft.SemanticKernel.ISKFunction;
+using IKernel = Microsoft.SemanticKernel.IKernel;
 
 string AzureOpenAIDeploymentName = Env.Var("AzureOpenAI:ChatCompletionDeploymentName")!;
 string AzureOpenAIEndpoint = Env.Var("AzureOpenAI:Endpoint")!;
 string AzureOpenAIApiKey = Env.Var("AzureOpenAI:ApiKey")!;
+string currentDirectory = Directory.GetCurrentDirectory();
 
-// Initialize all necessary functions outside of the kernel
-var currentDirectory = Directory.GetCurrentDirectory();
-HandlebarsAIFunction chatFunction = HandlebarsAIFunction.FromYaml("Chat", currentDirectory + "/Plugins/ChatPlugin/PersonaChat.prompt.yaml");
-
-// Initialize all necessary services outside of the kernel
-IChatCompletion service = new AzureChatCompletion("gpt-35-turbo", AzureOpenAIEndpoint, AzureOpenAIApiKey);
+ISKFunction chatFunction = SemanticFunction.GetFunctionFromYaml(currentDirectory + "/Plugins/ChatPlugin/PersonaChat.prompt.yaml");
+IChatCompletion gpt35Turbo = new AzureOpenAIChatCompletion("gpt-3.5-turbo", AzureOpenAIEndpoint, AzureOpenAIApiKey, AzureOpenAIDeploymentName);
 
 // Create new kernel
-IKernel kernel = new KernelBuilder()
-    .WithAIService("gpt-35-turbo", service)
-    //.WithDefaultFunction(chatFunction)
-    .Build();
+IKernel kernel = new Kernel(
+    aiServices: new () { gpt35Turbo },
+    promptTemplateEngines: new () {new HandlebarsPromptTemplateEngine()},
+    entryPoint: chatFunction
+);
 
-// TODO: This should be a method of the KernelBuilder
-kernel.AddFunction("Chat", chatFunction);
-
-// Initialize a chat history
-ChatHistory chatHistory = new();
-
+// Start the chat
+ChatHistory chatHistory = gpt35Turbo.CreateNewChat();
 while(true)
 {
     Console.Write("User > ");
     chatHistory.AddUserMessage(Console.ReadLine()!);
 
     // Run the simple chat flow
-    var result = kernel.RunAsync("Chat.PersonaChat",
-        variables: new()
-        {
-            { "persona", "You are a snarky (yet helpful) teenage assistant. Make sure to use hip slang in every response." },
-            { "messages", chatHistory }
-        }
-    );
-
-    // TODO: This could be further simplified to just...
-    // var result = kernel.RunAsync(variables: new() { {
-    //    "messages", chatHistory,
-    //    "persona", "You are a snarky (yet helpful) teenage assistant. Make sure to use hip slang in every response."
-    // } });
+    var result = await kernel.RunAsync(variables: new() {
+        { "persona", "You are a snarky (yet helpful) teenage assistant. Make sure to use hip slang in every response." },
+        { "messages", chatHistory }
+    });
 
     Console.WriteLine("Assistant > " + result);
-    chatHistory.AddAssistantMessage(result);
+    chatHistory.AddAssistantMessage(result.GetValue<string>()!);
 }

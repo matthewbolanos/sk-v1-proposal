@@ -2,6 +2,7 @@
 
 using System.ComponentModel;
 using Microsoft.SemanticKernel;
+using Microsoft.SemanticKernel.Handlebars;
 
 
 public class Math
@@ -9,6 +10,24 @@ public class Math
 
     public Math()
     {
+    }
+
+    [SKFunction, Description("Solve a math problems")]
+    public async Task<string> PerformMath(
+        IKernel kernel,
+        [Description("A description of a math problem")] string math_problem
+    )
+    {
+        // Create a plan
+        var planner = new HandlebarsPlanner(kernel, new HandlebarsPlannerConfiguration(){
+            IncludedPlugins = new () { "Math" },
+            ExcludedFunctions = new () { "Math.PerformMath", "Math.GenerateMathProblem" }
+        });
+        var plan = await planner.CreatePlanAsync("Solve the following math problem.\n\n" + math_problem);
+
+        // Run the plan
+        var result = await plan.InvokeAsync(kernel, kernel.CreateNewContext(), new Dictionary<string, object>());
+        return result.GetValue<string>()!;
     }
 
     [SKFunction, Description("Add two numbers. For example {{Math_Add number1=1 number2=2}} will return 3.")]

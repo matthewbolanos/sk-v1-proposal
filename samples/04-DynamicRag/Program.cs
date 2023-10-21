@@ -1,70 +1,49 @@
 ﻿
-using Microsoft.SemanticKernel;
 using Microsoft.SemanticKernel.AI.ChatCompletion;
-using Microsoft.SemanticKernel.Connectors.AI.OpenAI.ChatCompletion;
 using Microsoft.SemanticKernel.Handlebars;
+using ISKFunction = Microsoft.SemanticKernel.ISKFunction;
+using IKernel = Microsoft.SemanticKernel.IKernel;
 
 string AzureOpenAIDeploymentName = Env.Var("AzureOpenAI:ChatCompletionDeploymentName")!;
 string AzureOpenAIEndpoint = Env.Var("AzureOpenAI:Endpoint")!;
 string AzureOpenAIApiKey = Env.Var("AzureOpenAI:ApiKey")!;
-
-// Get the current directory
 var currentDirectory = Directory.GetCurrentDirectory();
 
-// Create chat plugin
-Plugin chatPlugin = new Plugin(
-    "Chat",
-    new () {
-        HandlebarsAIFunction.FromYaml("Chat", currentDirectory + "/Plugins/ChatPlugin/Chat.prompt.yaml"),
-        HandlebarsAIFunction.FromYaml("Chat",currentDirectory + "/Plugins/ChatPlugin/GenerateMathProblem.prompt.yaml"),
-        HandlebarsAIFunction.FromYaml("Chat",currentDirectory + "/Plugins/ChatPlugin/GetNextStep.prompt.yaml")
-    }
+ISKFunction chatFunction = SemanticFunction.GetFunctionFromYaml(currentDirectory + "/Plugins/ChatPlugin/Chat.prompt.yaml");
+IChatCompletion gpt35Turbo = new AzureOpenAIChatCompletion("gpt-3.5-turbo", AzureOpenAIEndpoint, AzureOpenAIApiKey, AzureOpenAIDeploymentName);
+
+// Create intent plugin
+Plugin intentPlugin = new(
+    "Intent",
+    functions: new () { SemanticFunction.GetFunctionFromYaml(currentDirectory + "/Plugins/IntentPlugin/GetNextStep.prompt.yaml") }
 );
 
-// Initialize all necessary services outside of the kernel
-IChatCompletion service = new AzureChatCompletion("gpt-35-turbo", AzureOpenAIEndpoint, AzureOpenAIApiKey);
+// Create math plugin
+List<ISKFunction> mathFunctions = NativeFunction.GetFunctionsFromObject(new Math());
+mathFunctions.Add(SemanticFunction.GetFunctionFromYaml(currentDirectory + "/Plugins/MathPlugin/GenerateMathProblem.prompt.yaml"));
+Plugin mathPlugin = new(
+    "Math",
+    functions: mathFunctions
+);
 
 // Create new kernel
-IKernel kernel = new KernelBuilder()
-    .WithAIService("gpt-35-turbo", service)
-    .Build();
+IKernel kernel = new Kernel(
+    aiServices: new () { gpt35Turbo },
+    plugins: new () { intentPlugin, mathPlugin },
+    promptTemplateEngines: new () {new HandlebarsPromptTemplateEngine()},
+    entryPoint: chatFunction
+);
 
-// TODO: These should be functions of the builder
-kernel.AddPlugin(chatPlugin);
-kernel.ImportFunctions(new Math(), "Math");
-kernel.RegisterCustomFunction(SKFunction.FromNativeFunction(
-    async (string math_problem) =>  {
-        // Create a plan
-        var planner = new HandlebarsPlanner(kernel);
-        var plan = planner.CreatePlan(
-            "Solve the following math problem.\n\n" + math_problem,
-            new List<string>(){"Math"}
-        );
-
-        // Run the plan
-        var result = await plan.InvokeAsync(kernel, kernel.CreateNewContext(), new Dictionary<string, object>());
-        return result.GetValue<string>();
-    },
-    "Planner", "PerformMath",
-    "Solves a math problem"
-));
-
-// Initialize a chat history
+// Start the chat
 ChatHistory chatHistory = new();
-
 while (true)
 {
     Console.Write("User > ");
     chatHistory.AddUserMessage(Console.ReadLine()!);
 
     // Run the simple chat flow from a single handlebars template
-    var result = kernel.RunAsync("Chat_Chat",
-        variables: new()
-        {
-            { "messages", chatHistory }
-        }
-    );
+    var result = await kernel.RunAsync( new() {{ "messages", chatHistory }});
 
     Console.WriteLine("Assistant > " + result);
-    chatHistory.AddAssistantMessage(result);
+    chatHistory.AddAssistantMessage(result.GetValue<string>()!);
 }

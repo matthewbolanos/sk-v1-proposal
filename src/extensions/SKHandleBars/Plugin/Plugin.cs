@@ -16,7 +16,7 @@ public class Plugin
 {
     public Plugin(
         string name,
-        Collection<ISKFunction> functions,
+        List<ISKFunction> functions,
         string? description = null,
         Uri? logo = null,
         string? contactEmail = null,
@@ -40,5 +40,5 @@ public class Plugin
 
     public Uri? LegalInfoUrl { get; }
 
-    public Collection<ISKFunction> Functions { get; }
+    public IEnumerable<ISKFunction> Functions { get; }
 }

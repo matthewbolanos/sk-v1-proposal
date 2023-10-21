@@ -11,7 +11,7 @@ template: |
   {{/each}}
 
   {{#message role="system"}}
-    {{Search_Search query=(Chat_GetSearchQuery messages=messages)}}
+    {{Search_Search query=(Search_GetSearchQuery messages=messages)}}
   {{/message}}
 template_format: handlebars
 description: A function that gets uses the chat history to respond to the user.
