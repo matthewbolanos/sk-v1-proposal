@@ -266,6 +266,8 @@ public sealed class NativeFunction : ISKFunction, IDisposable
         }
 
         string? description = method.GetCustomAttribute<DescriptionAttribute>(inherit: true)?.Description;
+        string? outputDescription = method.GetCustomAttribute<SKOutputDescriptionAttribute>(inherit: true)?.ReturnDescription;
+        string? sampleInput = method.GetCustomAttribute<SKSampleAttribute>(inherit: true)?.Inputs;
 
         // Output
         // Examples
