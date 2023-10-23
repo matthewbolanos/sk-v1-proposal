@@ -9,6 +9,7 @@ string AzureOpenAIEndpoint = Env.Var("AzureOpenAI:Endpoint")!;
 string AzureOpenAIApiKey = Env.Var("AzureOpenAI:ApiKey")!;
 var currentDirectory = Directory.GetCurrentDirectory();
 
+// Initialize the required functions and services for the kernel
 ISKFunction chatFunction = SemanticFunction.GetFunctionFromYaml(currentDirectory + "/Plugins/ChatPlugin/Chat.prompt.yaml");
 IChatCompletion gpt35Turbo = new AzureOpenAIChatCompletion("gpt-3.5-turbo", AzureOpenAIEndpoint, AzureOpenAIApiKey, AzureOpenAIDeploymentName);
 
@@ -41,7 +42,10 @@ while (true)
     Console.Write("User > ");
     chatHistory.AddUserMessage(Console.ReadLine()!);
 
-    // Run the simple chat flow from a single handlebars template
+    // Run the chat function
+    // The dynamic chat function uses a planner to create a plan that solves a math problem
+    // See Plugins/MathPlugin/Math.cs for the code that runs the planner
+    // See Plugins/ChatPlugin/GroundedChat.prompt.yaml for the full prompt
     var result = await kernel.RunAsync( new() {{ "messages", chatHistory }});
 
     Console.WriteLine("Assistant > " + result);

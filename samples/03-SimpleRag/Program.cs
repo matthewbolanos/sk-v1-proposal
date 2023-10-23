@@ -10,6 +10,7 @@ string AzureOpenAIApiKey = Env.Var("AzureOpenAI:ApiKey")!;
 string BingApiKey = Env.Var("Bing:ApiKey")!;
 string currentDirectory = Directory.GetCurrentDirectory();
 
+// Initialize the required functions and services for the kernel
 ISKFunction chatFunction = SemanticFunction.GetFunctionFromYaml(currentDirectory + "/Plugins/ChatPlugin/GroundedChat.prompt.yaml");
 IChatCompletion gpt35Turbo = new AzureOpenAIChatCompletion("gpt-3.5-turbo", AzureOpenAIEndpoint, AzureOpenAIApiKey, AzureOpenAIDeploymentName);
 
@@ -36,7 +37,9 @@ while(true)
     Console.Write("User > ");
     chatHistory.AddUserMessage(Console.ReadLine()!);
 
-    // Run the simple chat flow
+    // Run the chat function
+    // The grounded chat function uses the search plugin to perform a Bing search to ground the response
+    // See Plugins/ChatPlugin/GroundedChat.prompt.yaml for the full prompt
     var result = await kernel.RunAsync(variables: new() {
         { "persona", "You are a snarky (yet helpful) teenage assistant. Make sure to use hip slang in every response." },
         { "messages", chatHistory }
