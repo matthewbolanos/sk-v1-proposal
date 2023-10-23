@@ -41,7 +41,7 @@ public class Math
     }
 
     [SKFunction]
-    [Description("Adds two numbers.")]
+    [Description("Adds two numbers. For example, {{Math_Add number1=1 number2=2}} returns 3.}}")]
     [SKOutputDescription("The summation of the numbers.")]
     [SKSample(
         inputs: "{\"number1\":1, \"number2\":2}",
@@ -56,7 +56,7 @@ public class Math
     }
 
     [SKFunction]
-    [Description("Subtracts two numbers.")]
+    [Description("Subtracts two numbers. For example, {{Math_Subtract minuend=5 subtrahend=2}} returns 3.}}")]
     [SKOutputDescription("The difference between the minuend and subtrahend.")]
     [SKSample(
         inputs: "{\"minuend\":5, \"subtrahend\":2}",
@@ -71,7 +71,7 @@ public class Math
     }
 
     [SKFunction]
-    [Description("Multiplies two numbers.")]
+    [Description("Multiplies two numbers. For example, {{Math_Multiply number1=5 number2=2}} returns 10.}}")]
     [SKOutputDescription("The product of the numbers.")]
     [SKSample(
         inputs: "{\"number1\":5, \"number2\":2}",
@@ -86,7 +86,7 @@ public class Math
     }
 
     [SKFunction]
-    [Description("Divides two numbers.")]
+    [Description("Divides two numbers. For example, {{Math_Divide dividend=10 divisor=2}} returns 5.}}")]
     [SKOutputDescription("The quotient of the dividend and divisor.")]
     [SKSample(
         inputs: "{\"dividend\":10, \"divisor\":2}",
@@ -101,7 +101,7 @@ public class Math
     }
 
     [SKFunction]
-    [Description("Gets the remainder of two numbers.")]
+    [Description("Gets the remainder of two numbers. For example, {{Math_Modulo dividend=10 divisor=3}} returns 1.}}")]
     [SKOutputDescription("The remainder of the dividend and divisor.")]
     [SKSample(
         inputs: "{\"dividend\":10, \"divisor\":3}",
@@ -116,7 +116,7 @@ public class Math
     }
 
     [SKFunction]
-    [Description("Gets the absolute value of a number.")]
+    [Description("Gets the absolute value of a number. For example, {{Math_Abs number=-10}} returns 10.}}")]
     [SKOutputDescription("The absolute value of the number.")]
     [SKSample(
         inputs: "{\"number\":-10}",
@@ -130,7 +130,7 @@ public class Math
     }
 
     [SKFunction]
-    [Description("Gets the ceiling of a number.")]
+    [Description("Gets the ceiling of a number. For example, {{Math_Ceiling number=5.1}} returns 6.}}")]
     [SKOutputDescription("The ceiling of the number.")]
     [SKSample(
         inputs: "{\"number\":5.1}",
@@ -144,7 +144,7 @@ public class Math
     }
 
     [SKFunction]
-    [Description("Gets the floor of a number.")]
+    [Description("Gets the floor of a number. For example, {{Math_Floor number=5.9}} returns 5.}}")]
     [SKOutputDescription("The floor of the number.")]
     [SKSample(
         inputs: "{\"number\":5.9}",
@@ -158,7 +158,7 @@ public class Math
     }
 
     [SKFunction]
-    [Description("Gets the maximum of two numbers.")]
+    [Description("Gets the maximum of two numbers. For example, {{Math_Max number1=5 number2=10}} returns 10.}}")]
     [SKOutputDescription("The maximum of the two numbers.")]
     [SKSample(
         inputs: "{\"number1\":5, \"number2\":10}",
@@ -173,7 +173,7 @@ public class Math
     }
 
     [SKFunction]
-    [Description("Gets the minimum of two numbers.")]
+    [Description("Gets the minimum of two numbers. For example, {{Math_Min number1=5 number2=10}} returns 5.}}")]
     [SKOutputDescription("The minimum of the two numbers.")]
     [SKSample(
         inputs: "{\"number1\":5, \"number2\":10}",
@@ -188,7 +188,7 @@ public class Math
     }
 
     [SKFunction]
-    [Description("Gets the sign of a number.")]
+    [Description("Gets the sign of a number. For example, {{Math_Sign number=-10}} returns -1.}}")]
     [SKOutputDescription("The sign of the number.")]
     [SKSample(
         inputs: "{\"number\":-10}",
@@ -202,7 +202,7 @@ public class Math
     }
 
     [SKFunction]
-    [Description("Gets the square root of a number.")]
+    [Description("Gets the square root of a number. For example, {{Math_Sqrt number=25}} returns 5.}}")]
     [SKOutputDescription("The square root of the number.")]
     [SKSample(
         inputs: "{\"number\":25}",
@@ -216,7 +216,7 @@ public class Math
     }
 
     [SKFunction]
-    [Description("Gets the sine of a number.")]
+    [Description("Gets the sine of a number. For example, {{Math_Sin number=0}} returns 0.}}")]
     [SKOutputDescription("The sine of the number.")]
     [SKSample(
         inputs: "{\"number\":0}",
@@ -230,7 +230,7 @@ public class Math
     }
 
     [SKFunction]
-    [Description("Gets the cosine of a number.")]
+    [Description("Gets the cosine of a number. For example, {{Math_Cos number=0}} returns 1.}}")]
     [SKOutputDescription("The cosine of the number.")]
     [SKSample(
         inputs: "{\"number\":0}",
@@ -244,7 +244,7 @@ public class Math
     }
 
     [SKFunction]
-    [Description("Gets the tangent of a number.")]
+    [Description("Gets the tangent of a number. For example, {{Math_Tan number=0}} returns 0.}}")]
     [SKOutputDescription("The tangent of the number.")]
     [SKSample(
         inputs: "{\"number\":0}",
@@ -258,7 +258,7 @@ public class Math
     }
 
     [SKFunction]
-    [Description("Raises a number to a power.")]
+    [Description("Raises a number to a power. For example, {{Math_Pow number1=5 number2=2}} returns 25.}}")]
     [SKOutputDescription("The number raised to the power.")]
     [SKSample(
         inputs: "{\"number1\":5, \"number2\":2}",
@@ -273,7 +273,7 @@ public class Math
     }
 
     [SKFunction]
-    [Description("Gets a rounded number.")]
+    [Description("Gets a rounded number. For example, {{Math_Round number=1.23456 digits=2}} returns 1.23.}}")]
     [SKOutputDescription("The rounded number.")]
     [SKSample(
         inputs: "{\"number\":1.23456, \"digits\":2}",
