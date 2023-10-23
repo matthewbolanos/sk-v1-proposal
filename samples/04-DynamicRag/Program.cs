@@ -31,8 +31,7 @@ Plugin mathPlugin = new(
 IKernel kernel = new Kernel(
     aiServices: new () { gpt35Turbo },
     plugins: new () { intentPlugin, mathPlugin },
-    promptTemplateEngines: new () {new HandlebarsPromptTemplateEngine()},
-    entryPoint: chatFunction
+    promptTemplateEngines: new () {new HandlebarsPromptTemplateEngine()}
 );
 
 // Start the chat
@@ -46,7 +45,10 @@ while (true)
     // The dynamic chat function uses a planner to create a plan that solves a math problem
     // See Plugins/MathPlugin/Math.cs for the code that runs the planner
     // See Plugins/ChatPlugin/GroundedChat.prompt.yaml for the full prompt
-    var result = await kernel.RunAsync( new() {{ "messages", chatHistory }});
+    var result = await kernel.RunAsync(
+        chatFunction,
+        new() {{ "messages", chatHistory }}
+    );
 
     Console.WriteLine("Assistant > " + result);
     chatHistory.AddAssistantMessage(result.GetValue<string>()!);

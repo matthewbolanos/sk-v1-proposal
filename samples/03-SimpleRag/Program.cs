@@ -26,8 +26,7 @@ Plugin searchPlugin = new(
 IKernel kernel = new Kernel(
     aiServices: new () { gpt35Turbo },
     plugins: new () { searchPlugin },
-    promptTemplateEngines: new () {new HandlebarsPromptTemplateEngine()},
-    entryPoint: chatFunction
+    promptTemplateEngines: new () {new HandlebarsPromptTemplateEngine()}
 );
 
 // Start the chat
@@ -40,10 +39,13 @@ while(true)
     // Run the chat function
     // The grounded chat function uses the search plugin to perform a Bing search to ground the response
     // See Plugins/ChatPlugin/GroundedChat.prompt.yaml for the full prompt
-    var result = await kernel.RunAsync(variables: new() {
-        { "persona", "You are a snarky (yet helpful) teenage assistant. Make sure to use hip slang in every response." },
-        { "messages", chatHistory }
-    });
+    var result = await kernel.RunAsync(
+        chatFunction,
+        variables: new() {
+            { "persona", "You are a snarky (yet helpful) teenage assistant. Make sure to use hip slang in every response." },
+            { "messages", chatHistory }
+        }
+    );
 
     Console.WriteLine("Assistant > " + result);
     chatHistory.AddAssistantMessage(result.GetValue<string>()!);

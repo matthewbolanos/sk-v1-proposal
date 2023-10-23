@@ -14,7 +14,7 @@ public class Math
 
     [SKFunction]
     [Description("Uses functions from the Math plugin to solve math problems.")]
-    [SKReturnDescription("The answer to the math problem.")]
+    [SKOutputDescription("The answer to the math problem.")]
     [SKSample(
         inputs: "{\"math_problem\",\"If I started with $120 in the stock market, how much would I have after 10 years if the growth rate was 5%?\"}",
         output:"After 10 years, starting with $120, and with a growth rate of 5%, you would have $195.47 in the stock market."
@@ -38,7 +38,7 @@ public class Math
 
     [SKFunction]
     [Description("Adds two numbers.")]
-    [SKReturnDescription("The summation of the numbers.")]
+    [SKOutputDescription("The summation of the numbers.")]
     [SKSample(
         inputs: "{\"number1\":1, \"number2\":2}",
         output:"3"
@@ -53,7 +53,7 @@ public class Math
 
     [SKFunction]
     [Description("Subtracts two numbers.")]
-    [SKReturnDescription("The difference between the minuend and subtrahend.")]
+    [SKOutputDescription("The difference between the minuend and subtrahend.")]
     [SKSample(
         inputs: "{\"minuend\":5, \"subtrahend\":2}",
         output:"3"
@@ -68,7 +68,7 @@ public class Math
 
     [SKFunction]
     [Description("Multiplies two numbers.")]
-    [SKReturnDescription("The product of the numbers.")]
+    [SKOutputDescription("The product of the numbers.")]
     [SKSample(
         inputs: "{\"number1\":5, \"number2\":2}",
         output:"10"
@@ -83,7 +83,7 @@ public class Math
 
     [SKFunction]
     [Description("Divides two numbers.")]
-    [SKReturnDescription("The quotient of the dividend and divisor.")]
+    [SKOutputDescription("The quotient of the dividend and divisor.")]
     [SKSample(
         inputs: "{\"dividend\":10, \"divisor\":2}",
         output:"5"
@@ -98,7 +98,7 @@ public class Math
 
     [SKFunction]
     [Description("Gets the remainder of two numbers.")]
-    [SKReturnDescription("The remainder of the dividend and divisor.")]
+    [SKOutputDescription("The remainder of the dividend and divisor.")]
     [SKSample(
         inputs: "{\"dividend\":10, \"divisor\":3}",
         output:"1"
@@ -113,7 +113,7 @@ public class Math
 
     [SKFunction]
     [Description("Gets the absolute value of a number.")]
-    [SKReturnDescription("The absolute value of the number.")]
+    [SKOutputDescription("The absolute value of the number.")]
     [SKSample(
         inputs: "{\"number\":-10}",
         output:"5"
@@ -127,7 +127,7 @@ public class Math
 
     [SKFunction]
     [Description("Gets the ceiling of a number.")]
-    [SKReturnDescription("The ceiling of the number.")]
+    [SKOutputDescription("The ceiling of the number.")]
     [SKSample(
         inputs: "{\"number\":5.1}",
         output:"6"
@@ -141,7 +141,7 @@ public class Math
 
     [SKFunction]
     [Description("Gets the floor of a number.")]
-    [SKReturnDescription("The floor of the number.")]
+    [SKOutputDescription("The floor of the number.")]
     [SKSample(
         inputs: "{\"number\":5.9}",
         output:"5"
@@ -155,7 +155,7 @@ public class Math
 
     [SKFunction]
     [Description("Gets the maximum of two numbers.")]
-    [SKReturnDescription("The maximum of the two numbers.")]
+    [SKOutputDescription("The maximum of the two numbers.")]
     [SKSample(
         inputs: "{\"number1\":5, \"number2\":10}",
         output:"10"
@@ -170,7 +170,7 @@ public class Math
 
     [SKFunction]
     [Description("Gets the minimum of two numbers.")]
-    [SKReturnDescription("The minimum of the two numbers.")]
+    [SKOutputDescription("The minimum of the two numbers.")]
     [SKSample(
         inputs: "{\"number1\":5, \"number2\":10}",
         output:"5"
@@ -185,7 +185,7 @@ public class Math
 
     [SKFunction]
     [Description("Gets the sign of a number.")]
-    [SKReturnDescription("The sign of the number.")]
+    [SKOutputDescription("The sign of the number.")]
     [SKSample(
         inputs: "{\"number\":-10}",
         output:"-1"
@@ -199,7 +199,7 @@ public class Math
 
     [SKFunction]
     [Description("Gets the square root of a number.")]
-    [SKReturnDescription("The square root of the number.")]
+    [SKOutputDescription("The square root of the number.")]
     [SKSample(
         inputs: "{\"number\":25}",
         output:"5"
@@ -213,7 +213,7 @@ public class Math
 
     [SKFunction]
     [Description("Gets the sine of a number.")]
-    [SKReturnDescription("The sine of the number.")]
+    [SKOutputDescription("The sine of the number.")]
     [SKSample(
         inputs: "{\"number\":0}",
         output:"0"
@@ -227,7 +227,7 @@ public class Math
 
     [SKFunction]
     [Description("Gets the cosine of a number.")]
-    [SKReturnDescription("The cosine of the number.")]
+    [SKOutputDescription("The cosine of the number.")]
     [SKSample(
         inputs: "{\"number\":0}",
         output:"1"
@@ -241,7 +241,7 @@ public class Math
 
     [SKFunction]
     [Description("Gets the tangent of a number.")]
-    [SKReturnDescription("The tangent of the number.")]
+    [SKOutputDescription("The tangent of the number.")]
     [SKSample(
         inputs: "{\"number\":0}",
         output:"0"
@@ -255,7 +255,7 @@ public class Math
 
     [SKFunction]
     [Description("Raises a number to a power.")]
-    [SKReturnDescription("The number raised to the power.")]
+    [SKOutputDescription("The number raised to the power.")]
     [SKSample(
         inputs: "{\"number1\":5, \"number2\":2}",
         output:"25"
@@ -270,7 +270,7 @@ public class Math
 
     [SKFunction]
     [Description("Gets a rounded number.")]
-    [SKReturnDescription("The rounded number.")]
+    [SKOutputDescription("The rounded number.")]
     [SKSample(
         inputs: "{\"number\":1.23456, \"digits\":2}",
         output:"1.23"

@@ -16,8 +16,7 @@ IChatCompletion gpt35Turbo = new AzureOpenAIChatCompletion("gpt-3.5-turbo", Azur
 // Create a new kernel
 IKernel kernel = new Kernel(
     aiServices: new () { gpt35Turbo },
-    promptTemplateEngines: new () {new HandlebarsPromptTemplateEngine()},
-    entryPoint: chatFunction
+    promptTemplateEngines: new () {new HandlebarsPromptTemplateEngine()}
 );
 
 // Start the chat
@@ -30,7 +29,10 @@ while(true)
     // Run the simple chat
     // The simple chat function uses the messages variable to generate the next message
     // see Plugins/ChatPlugin/SimpleChat.prompt.yaml for the full prompt
-    var result = await kernel.RunAsync(variables: new() {{ "messages", chatHistory }});
+    var result = await kernel.RunAsync(
+        chatFunction,
+        variables: new() {{ "messages", chatHistory }}
+    );
 
     Console.WriteLine("Assistant > " + result);
     chatHistory.AddAssistantMessage(result.GetValue<string>()!);
