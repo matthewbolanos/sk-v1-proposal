@@ -25,4 +25,10 @@
   <ItemGroup>
     <ProjectReference Include="../../src/extensions/SKHandlebars/SKHandlebars.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Plugins\**">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
 </Project>
