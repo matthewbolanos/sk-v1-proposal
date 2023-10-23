@@ -31,7 +31,7 @@ public class Math
         });
         var plan = await planner.CreatePlanAsync("Solve the following math problem.\n\n" + math_problem);
 
-        Console.WriteLine("\n\nPlan: " + plan.ToString().Trim());
+        Console.WriteLine("\nPlan: " + plan.ToString().Trim());
 
         // Run the plan
         var result = await plan.InvokeAsync(kernel, kernel.CreateNewContext(), new Dictionary<string, object>());
