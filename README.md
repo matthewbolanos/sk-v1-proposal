@@ -1,6 +1,6 @@
-# SK Extensibility Scenarios
+# Samples for Semantic Kernel v1 proposal
 
-This repo demonstrates how to extend several Semantic Kernel interfaces and to use them in core scenarios.
+This repo demonstrates what AI apps may look like once v1 of Semantic Kernel is complete.
 
 ## Prerequisites
 
@@ -12,11 +12,10 @@ This repo demonstrates how to extend several Semantic Kernel interfaces and to u
 ## Configuring the sample
 
 
-Configure an Azure OpenAI endpoint
+Before runnning the samples, you must first configure an Azure OpenAI endpoint using the following
+commands after navigating to the folder of one of the samples.
 
 ```
-cd sk-extensibility-scenarios
-
 dotnet user-secrets set "AzureOpenAI:DeploymentType" "chat-completion"
 dotnet user-secrets set "AzureOpenAI:ChatCompletionDeploymentName" "gpt-35-turbo"
 dotnet user-secrets set "AzureOpenAI:Endpoint" "... your Azure OpenAI endpoint ..."
