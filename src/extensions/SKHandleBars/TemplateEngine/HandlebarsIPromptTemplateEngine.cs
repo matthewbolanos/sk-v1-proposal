@@ -218,6 +218,7 @@ public class HandlebarsPromptTemplateEngine : IPromptTemplateEngine
                 return false;
         }
     }
+
     private static bool TryParseAnyNumber(string input)
     {
         // Check if input can be parsed as any of these numeric types  
@@ -234,6 +235,13 @@ public class HandlebarsPromptTemplateEngine : IPromptTemplateEngine
             || ulong.TryParse(input, out _);
     }
 
+    /*
+     * Type check will pass if:
+     * Types are an exact match.
+     * Handlebar argument is any kind of numeric type if function parameter requires a numeric type.
+     * Handlebar argument type is an object (this covers complex types).
+     * Function parameter is a generic type.
+     */
     private static bool IsExpectedParameterType (Type functionViewType, Type handlebarArgumentType, object handlebarArgValue)
     {
         var isValidNumericType = IsNumericType(functionViewType) && IsNumericType(handlebarArgumentType);
@@ -242,7 +250,7 @@ public class HandlebarsPromptTemplateEngine : IPromptTemplateEngine
             isValidNumericType = TryParseAnyNumber(handlebarArgValue.ToString());
         }
             
-        return functionViewType == handlebarArgumentType || isValidNumericType || handlebarArgumentType == typeof(object);
+        return functionViewType == handlebarArgumentType || isValidNumericType || handlebarArgumentType == typeof(object) || functionViewType.IsGenericType;
     }
 
     [Obsolete("Use Render() instead.")]
