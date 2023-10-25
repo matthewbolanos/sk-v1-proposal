@@ -1,11 +1,10 @@
 // Copyright (c) Microsoft. All rights reserved.
 using Microsoft.SemanticKernel.Orchestration;
 using HandlebarsDotNet;
-using Microsoft.SemanticKernel.AI.ChatCompletion;
-using Microsoft.SemanticKernel.Services;
-using Microsoft.SemanticKernel.AI;
 using Microsoft.SemanticKernel.TemplateEngine;
 using System.Text.Json;
+using HandlebarsDotNet.Compiler;
+using System.Security.AccessControl;
 
 namespace Microsoft.SemanticKernel.Handlebars;
 
@@ -107,30 +106,66 @@ public class HandlebarsPromptTemplateEngine : IPromptTemplateEngine
             // Get the parameters from the template arguments
             if (arguments.Any())
             {
-                var parameters = arguments[0] as IDictionary<string, object>;
-
-                // Prepare the input parameters for the function
-                foreach (var param in functionView.Parameters)
+                if (arguments[0].GetType() == typeof(HashParameterDictionary))
                 {
-                    if (param.Type == typeof(IKernel))
+                    // Process hash arguments
+                    var handlebarArgs = arguments[0] as IDictionary<string, object>;
+
+                    // Prepare the input parameters for the function
+                    foreach (var param in functionView.Parameters)
                     {
-                        variables.Add(param.Name, kernel);
-                    }
-                    // Check if parameters has key
-                    else if (parameters?.ContainsKey(param.Name) == true)
-                    {
-                        if (variables.ContainsKey(param.Name))
+                        if (param.Type == typeof(IKernel))
                         {
-                            variables[param.Name] = parameters[param.Name];
+                            variables.Add(param.Name, kernel);
                         }
-                        else
+                        // Check if parameters has key
+                        else if (handlebarArgs?.ContainsKey(param.Name) == true)
                         {
-                            variables.Add(param.Name, parameters[param.Name]);
+                            if (variables.ContainsKey(param.Name))
+                            {
+                                variables[param.Name] = handlebarArgs[param.Name];
+                            }
+                            else
+                            {
+                                variables.Add(param.Name, handlebarArgs[param.Name]);
+                            }
+                        }
+                        else if (param.IsRequired == true)
+                        {
+                            throw new Exception($"Parameter {param.Name} is required for function {functionView.Name}.");
                         }
                     }
-                    else if (param.IsRequired == true)
+                }
+                else
+                {
+                    // Process positional arguments
+                    var requiredParameters = functionView.Parameters.Where(p => p.IsRequired == true).ToList();
+                    if (arguments.Length < requiredParameters.Count)
                     {
-                        throw new Exception($"Parameter {param.Name} is required for function {functionView.Name}.");
+                        var argIndex = 0;
+                        foreach (var param in functionView.Parameters)
+                        {
+                            if (IsExpectedParameterType(param.Type, arguments[argIndex].GetType(), arguments[argIndex]))
+                            {
+                                if (variables.ContainsKey(param.Name))
+                                {
+                                    variables[param.Name] = arguments[argIndex];
+                                }
+                                else
+                                {
+                                    variables.Add(param.Name, arguments[argIndex]);
+                                }
+                                argIndex++;
+                            }
+                            else
+                            {
+                                throw new Exception($"Invalid parameter type for function {functionView.Name}. Parameter {param.Name} expects type {param.Type} but received {arguments[argIndex].GetType()}.");
+                            }
+                        }
+                    }
+                    else
+                    {
+                        throw new Exception($"Invalid parameter count for function {functionView.Name}. {arguments.Length} were specified but {functionView.Parameters.Count} are required.");
                     }
                 }
             }
@@ -164,8 +199,62 @@ public class HandlebarsPromptTemplateEngine : IPromptTemplateEngine
         });
     }
 
-    [Obsolete("Use Render() instead.")]
+    private static bool IsNumericType(Type type)
+    {
+        switch (Type.GetTypeCode(type))
+        {
+            case TypeCode.Byte:
+            case TypeCode.Decimal:
+            case TypeCode.Double:
+            case TypeCode.Int16:
+            case TypeCode.Int32:
+            case TypeCode.Int64:
+            case TypeCode.SByte:
+            case TypeCode.Single:
+            case TypeCode.UInt16:
+            case TypeCode.UInt32:
+            case TypeCode.UInt64:
+                return true;
+            default:
+                return false;
+        }
+    }
 
+    private static bool TryParseAnyNumber(string input)
+    {
+        // Check if input can be parsed as any of these numeric types  
+        return int.TryParse(input, out _)
+            || double.TryParse(input, out _)
+            || float.TryParse(input, out _)
+            || long.TryParse(input, out _)
+            || decimal.TryParse(input, out _)
+            || short.TryParse(input, out _)
+            || byte.TryParse(input, out _)
+            || sbyte.TryParse(input, out _)
+            || ushort.TryParse(input, out _)
+            || uint.TryParse(input, out _)
+            || ulong.TryParse(input, out _);
+    }
+
+    /*
+     * Type check will pass if:
+     * Types are an exact match.
+     * Handlebar argument is any kind of numeric type if function parameter requires a numeric type.
+     * Handlebar argument type is an object (this covers complex types).
+     * Function parameter is a generic type.
+     */
+    private static bool IsExpectedParameterType (Type functionViewType, Type handlebarArgumentType, object handlebarArgValue)
+    {
+        var isValidNumericType = IsNumericType(functionViewType) && IsNumericType(handlebarArgumentType);
+        if (IsNumericType(functionViewType) && !IsNumericType(handlebarArgumentType))
+        {
+            isValidNumericType = TryParseAnyNumber(handlebarArgValue.ToString());
+        }
+            
+        return functionViewType == handlebarArgumentType || isValidNumericType || handlebarArgumentType == typeof(object) || functionViewType.IsGenericType;
+    }
+
+    [Obsolete("Use Render() instead.")]
     public Task<string> RenderAsync(string templateText, SKContext context, CancellationToken cancellationToken = default)
     {
         throw new NotImplementedException();
