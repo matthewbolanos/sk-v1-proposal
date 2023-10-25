@@ -139,7 +139,7 @@ public class HandlebarsPromptTemplateEngine : IPromptTemplateEngine
                 {
                     // Process positional arguments
                     var requiredParameters = functionView.Parameters.Where(p => p.IsRequired == true).ToList();
-                    if (arguments.Length >= requiredParameters.Count)
+                    if (arguments.Length >= requiredParameters.Count && arguments.Length <= functionView.Parameters.Count)
                     {
                         var argIndex = 0;
                         foreach (var param in functionView.Parameters)
