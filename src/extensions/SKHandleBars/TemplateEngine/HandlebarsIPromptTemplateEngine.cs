@@ -4,7 +4,6 @@ using HandlebarsDotNet;
 using Microsoft.SemanticKernel.TemplateEngine;
 using System.Text.Json;
 using HandlebarsDotNet.Compiler;
-using System.Security.AccessControl;
 
 namespace Microsoft.SemanticKernel.Handlebars;
 
@@ -140,7 +139,7 @@ public class HandlebarsPromptTemplateEngine : IPromptTemplateEngine
                 {
                     // Process positional arguments
                     var requiredParameters = functionView.Parameters.Where(p => p.IsRequired == true).ToList();
-                    if (arguments.Length < requiredParameters.Count)
+                    if (arguments.Length >= requiredParameters.Count)
                     {
                         var argIndex = 0;
                         foreach (var param in functionView.Parameters)
@@ -171,28 +170,12 @@ public class HandlebarsPromptTemplateEngine : IPromptTemplateEngine
             }
 
             ISKFunction function = kernel.Functions.GetFunction(functionView.PluginName, functionView.Name);
-            
-            FunctionResult result;
-            if (function is SemanticFunction handlebarsAIFunction)
-            {
-
-                result = handlebarsAIFunction.InvokeAsync(
-                    kernel,
-                    executionContext,
-                    variables: variables,
-                    cancellationToken: cancellationToken
-                ).GetAwaiter().GetResult();
-            }
-            else
-            {
-                result = function.InvokeAsync(
-                    kernel,
-                    executionContext,
-                    variables: variables,
-                    cancellationToken: cancellationToken
-                ).GetAwaiter().GetResult();
-            }
-
+            FunctionResult result = function.InvokeAsync(
+                kernel,
+                executionContext,
+                variables: variables,
+                cancellationToken: cancellationToken
+            ).GetAwaiter().GetResult();
 
             // Write the result to the template
             writer.Write(result);
