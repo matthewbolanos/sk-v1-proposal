@@ -12,8 +12,11 @@ This repo demonstrates what AI apps may look like once v1 of Semantic Kernel is 
 ## Configuring the sample
 
 
-Before runnning the samples, you must first configure an Azure OpenAI endpoint using the following
-commands after navigating to the folder of one of the samples.
+Before runnning the samples, you must first configure an Azure OpenAI endpoint using the following commands.
+
+Navigate to one of the samples, e.g., `cd sk-v1-proposal/samples/01-SimpleChat`.
+
+Set your user secrets.
 
 ```
 dotnet user-secrets set "AzureOpenAI:DeploymentType" "chat-completion"
