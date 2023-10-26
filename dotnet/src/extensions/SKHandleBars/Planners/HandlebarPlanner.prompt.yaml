@@ -35,7 +35,7 @@ template: |
   - *Description*: Generates a JSON string from the given value.
   - *Inputs*:
     - `value`: string - The value to generate JSON for.
-  - *Output*: none
+  - *Output*: string - The JSON string.
 
   {{#each functions}}
   ### {{PluginName}}_{{Name}}
@@ -44,7 +44,7 @@ template: |
   {{#each Parameters}}
     - `{{../Name}}_{{Name}}`: {{Type}} - {{Description}} {{#if IsRequired}}(required){{else}}(optional){{/if}}
   {{/each}}
-  - *Output*: string - The result of the function.
+  - *Output*: string - The result of the helper.
   {{!-- Additional information that can be added later
   {{#with OutputVariable}}
     - *Output*: {{type}} - {{description}}
