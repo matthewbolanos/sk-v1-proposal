@@ -23,6 +23,7 @@ template: |
   ## Rules
   - The summary should be 2-3 sentences long, max.
   - Do not provide the steps or answer to the problem otherwise the user will not learn how to solve it themselves.
+  - You must include all of the required numbers and operators in the summary.
   {{/message}}
 
   {{#message role="assistant"}}

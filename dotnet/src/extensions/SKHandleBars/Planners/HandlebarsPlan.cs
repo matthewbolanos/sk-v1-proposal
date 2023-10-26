@@ -49,7 +49,7 @@ public sealed class HandlebarsPlan : IPlan
     public async Task<FunctionResult> InvokeAsync(
         IKernel kernel,
         SKContext executionContext,
-        Dictionary<string, object> variables,
+        Dictionary<string, object?> variables,
         CancellationToken cancellationToken = default)
     {
         string results = kernel.PromptTemplateEngine.Render(kernel, executionContext, template, variables, cancellationToken);

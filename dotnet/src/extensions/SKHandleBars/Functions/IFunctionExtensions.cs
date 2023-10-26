@@ -10,7 +10,7 @@ public static class HandlebarsIFunctionExtensions
         this ISKFunction function,
         IKernel kernel,
         SKContext executionContext,
-        Dictionary<string, object> variables,
+        Dictionary<string, object?> variables,
         CancellationToken cancellationToken = default)
     {
         FunctionResult functionResult;

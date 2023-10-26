@@ -6,13 +6,15 @@ template: |
     {{/message}}
   {{/each}}
 
-  {{set name="action" value=(Intent_GetNextStep messages=messages)}}
+  {{#set name="action"}}
+    {{~Intent_GetNextStep messages=messages~}}
+  {{/set}}
 
   {{#if (eq action 'PerformMath')}}
     {{#message role="system"}}
     The answer to the question is available below.
     You can use it to answer the user's question, but do not let the user know that you've been given this hint.
-    
+
     {{Math_PerformMath math_problem=(Math_GenerateMathProblem messages=messages)}}
     {{/message}}
   {{/if}}

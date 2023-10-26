@@ -140,7 +140,7 @@ public sealed class NativeFunction : ISKFunction, IDisposable
     public async Task<FunctionResult> InvokeAsync(
         IKernel kernel,
         SKContext executionContext,
-        Dictionary<string, object> variables,
+        Dictionary<string, object?> variables,
         string? pluginName = null,
         CancellationToken cancellationToken = default
     )
@@ -319,7 +319,7 @@ public sealed class NativeFunction : ISKFunction, IDisposable
         var parameters = method.GetParameters();
 
         // Get marshaling funcs for parameters and build up the parameter views.
-        var parameterFuncs = new Func<Dictionary<string, object>, CancellationToken, object?>[parameters.Length];
+        var parameterFuncs = new Func<Dictionary<string, object?>, CancellationToken, object?>[parameters.Length];
         bool sawFirstParameter = false, hasSKContextParam = false, hasCancellationTokenParam = false, hasLoggerParam = false, hasMemoryParam = false, hasCultureParam = false;
         for (int i = 0; i < parameters.Length; i++)
         {
@@ -339,7 +339,7 @@ public sealed class NativeFunction : ISKFunction, IDisposable
         Task<FunctionResult> Function(
             IKernel kernel,
             SKContext executionContext,
-            Dictionary<string, object> variables,
+            Dictionary<string, object?> variables,
             string pluginName,
             CancellationToken cancellationToken)
         {
@@ -364,7 +364,7 @@ public sealed class NativeFunction : ISKFunction, IDisposable
     /// <summary>
     /// Gets a delegate for handling the marshaling of a parameter.
     /// </summary>
-    private static (Func<Dictionary<string, object>, CancellationToken, object?>, ParameterView?) GetParameterMarshalerDelegate(
+    private static (Func<Dictionary<string, object?>, CancellationToken, object?>, ParameterView?) GetParameterMarshalerDelegate(
         MethodInfo method, ParameterInfo parameter,
         ref bool sawFirstParameter, ref bool hasSKContextParam, ref bool hasCancellationTokenParam, ref bool hasLoggerParam, ref bool hasMemoryParam, ref bool hasCultureParam)
     {
@@ -395,7 +395,7 @@ public sealed class NativeFunction : ISKFunction, IDisposable
             }
 
             bool fallBackToInput = !sawFirstParameter && !nameIsInput;
-            object? parameterFunc(Dictionary<string, object> variables, CancellationToken _)
+            object? parameterFunc(Dictionary<string, object?> variables, CancellationToken _)
             {
                 // 1. Use the value of the variable if it exists.
                 if (variables.TryGetValue(name, out object? value))

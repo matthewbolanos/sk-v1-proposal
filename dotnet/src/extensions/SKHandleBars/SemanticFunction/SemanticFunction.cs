@@ -120,7 +120,7 @@ public sealed class SemanticFunction : ISKFunction, IDisposable
     public async Task<FunctionResult> InvokeAsync(
         IKernel kernel,
         SKContext executionContext,
-        Dictionary<string, object> variables,
+        Dictionary<string, object?> variables,
         CancellationToken cancellationToken = default
     )
     {

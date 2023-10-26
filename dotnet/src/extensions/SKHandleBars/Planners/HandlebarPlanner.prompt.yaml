@@ -11,21 +11,21 @@ template: |
   ```
   
   ## Rules
-  - Only use helpers in the list below or the built-in helpers in Handlebars (i.e., `#if`, `#unless`, `#each`, `#with`)
-  - Use the {{{{raw}}}}{{set name='var' value=input}}{{{{/raw}}}} helper to save the results of a helper so that you can use it later in the template without wasting resources calling the same helper multiple times.
+  - Only use helpers in the list below or the built-in block helpers in Handlebars (i.e., `#if`, `#unless`, `#each`, `#with`)
+  - Use the {{{{raw}}}}{{#set name='var'}}input{{/set}}{{{{/raw}}}} block helper to save the results of a helper so that you can use it later in the template without wasting resources calling the same helper multiple times.
   - Wrap your Handlebar template in ``` to escape it and prevent it from being rendered.
   - There are no initial variables available to you. You must create them yourself using the `set` helper.
-  - Avoid nesting helpers since you have a tendency to create syntax errors when you do; use the `set` helper instead. For example, don't do this: {{{{raw}}}}`{{Plugin.Function input=(json value)}}` but instead do this: `{{set name='var' value=(json value)}}{{Plugin.Function var}}`{{{{/raw}}}}
+  - Avoid nesting helpers since you have a tendency to create syntax errors when you do; use the `set` helper instead. For example, don't do this: {{{{raw}}}}`{{Plugin.Function input=(json value)}}` but instead do this: `{{#set name='var'}}{{json value}}{{/set}}{{Plugin.Function var}}`{{{{/raw}}}}
   - You must include all required inputs for each helper otherwise the template will not render correctly.
 
   ## Helpers
   You have the following Handlebar helpers that you can use to accomplish the user's goal:
 
-  ### set
+  ### #set
   - *Description*: Updates the handlebar variable with the given name to the given value. It does not print anything to the screen.
   - *Inputs*:
     - `name`: string - The name of the variable to set.
-    - `value`: string - The value to set the variable to.
+    - `content`: string - The value to set the variable to.
   - *Output*: none
 
   ### json
@@ -67,6 +67,27 @@ template: |
   {{#message role="assistant"}}
   Here is the Handlebar template that you requested:
   {{/message}}
+
+  {{#if lastError}}
+  {{#message role="assistant"}}
+  ```
+  {{lastPlan}}
+  ```
+  {{/message}}
+
+  {{#message role="user"}}
+  When I try to run the handlebars template I get this error:
+  ```
+  {{lastError}}
+  ```
+  Can you create a new template that fixes this error?
+  {{/message}}
+
+  {{#message role="assistant"}}
+  I'm sorry for creating a template that causes that error, let me try to solve the goal with a different plan:
+  {{/message}}
+  {{/if}}
+
 template_format: handlebars
 description: A function that generates a plan to accomplish a user's goal.
 input_variables:
