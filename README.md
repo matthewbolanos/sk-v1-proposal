@@ -1,28 +1,16 @@
 # Samples for Semantic Kernel v1 proposal
-
 This repo demonstrates what AI apps may look like once v1 of Semantic Kernel is complete.
 
-## Prerequisites
+## Structure of repo
+- `dotnet` - .NET 6 samples
+    - `samples` – sample apps using proposed v1 API
+        - `01-SimpleChat` – simple chat bot
+        - `02-PersonaChat` – chat bot with a custom persona
+        - `03-SimpleRag` – chat bot that performs basic RAG
+        - `04-DynamicRag` – chat bot that performs dynamic RAG
+    - `src` – "hacks" to make the proposal "work"
 
-- [.NET 6](https://dotnet.microsoft.com/download/dotnet/6.0) is required to run this sample.
-- Install the recommended extensions
-- [C#](https://marketplace.visualstudio.com/items?itemName=ms-dotnettools.csharp)
-- [Semantic Kernel Tools](https://marketplace.visualstudio.com/items?itemName=ms-semantic-kernel.semantic-kernel) (optional)
+Additional samples (and hacks) will be provided for the Python and Java versions of Semantic Kernel.
 
-## Configuring the sample
-
-
-Before runnning the samples in VS Code, you must first configure an Azure OpenAI endpoint using the following commands.
-
-Navigate to one of the samples (e.g., `cd sk-v1-proposal/samples/01-SimpleChat`).
-
-Set your user secrets.
-
-```
-dotnet user-secrets set "AzureOpenAI:DeploymentType" "chat-completion"
-dotnet user-secrets set "AzureOpenAI:ChatCompletionDeploymentName" "gpt-35-turbo"
-dotnet user-secrets set "AzureOpenAI:Endpoint" "... your Azure OpenAI endpoint ..."
-dotnet user-secrets set "AzureOpenAI:ApiKey" "... your Azure OpenAI key ..."
-dotnet user-secrets set ""Bing:ApiKey" "... your Bing key ..."
-
-```
+## Giving feedback
+If you have feedback on the proposal, please join the [discussion board](https://github.com/matthewbolanos/sk-v1-proposal/discussions/2).
