@@ -31,7 +31,7 @@ public static class HandlebarsIKernelExtensions
     public static async Task<FunctionResult> RunAsync(
         this IKernel kernel,
         ISKFunction function,
-        Dictionary<string, object> variables
+        Dictionary<string, object?> variables
         )
     {
         if (kernel is Kernel kernel2)
@@ -46,7 +46,7 @@ public static class HandlebarsIKernelExtensions
 
     public static async Task<FunctionResult> RunAsync(
         this IKernel kernel,
-        Dictionary<string, object> variables
+        Dictionary<string, object?> variables
         )
     {
         if (kernel is Kernel kernel2 && kernel2.EntryPoint != null)

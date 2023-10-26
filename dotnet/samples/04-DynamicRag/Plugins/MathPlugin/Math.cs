@@ -24,20 +24,39 @@ public class Math
         [Description("A description of a math problem; use the GenerateMathProblem function to create one.")] string math_problem
     )
     {
-        // Create a plan
-        var planner = new HandlebarsPlanner(kernel, new HandlebarsPlannerConfiguration(){
-            IncludedPlugins = new () { "Math" },
-            ExcludedFunctions = new () { "Math.PerformMath", "Math.GenerateMathProblem" }
-        });
-        var plan = await planner.CreatePlanAsync("Solve the following math problem.\n\n" + math_problem);
+        int maxTries = 1;
+        HandlebarsPlan? lastPlan = null;
+        Exception? lastError = null;
 
-        Console.WriteLine("\nPlan: " + plan.ToString().Trim());
+        while (maxTries >= 0)
+        {
+            // Create the planner
+            var planner = new HandlebarsPlanner(kernel, new HandlebarsPlannerConfiguration(){
+                IncludedPlugins = new () { "Math" },
+                ExcludedFunctions = new () { "Math.PerformMath", "Math.GenerateMathProblem" },
+                LastPlan = lastPlan, // Pass in the last plan in case we want to try again
+                LastError = lastError?.Message // Pass in the last error to avoid trying the same thing again
+            });
+            var plan = await planner.CreatePlanAsync("Solve the following math problem.\n\n" + math_problem);
+            lastPlan = plan;
+            Console.WriteLine("\nPlan: " + lastPlan.ToString().Trim());
+            
+            // Run the plan
+            try {
+                var result = await plan.InvokeAsync(kernel, kernel.CreateNewContext(), new Dictionary<string, object?>());
 
-        // Run the plan
-        var result = await plan.InvokeAsync(kernel, kernel.CreateNewContext(), new Dictionary<string, object>());
+                Console.WriteLine("\n\nResult: " + result.ToString().Trim() + "\n");
+                return result.GetValue<string>()!;
+            } catch (Exception e) {
+                // If we get an error, try again
+                lastError = e;
+                Console.WriteLine("\n\nError: " + e.Message);
+            }
+            maxTries--;
+        }
 
-        Console.WriteLine("\n\nResult: " + result.ToString().Trim() + "\n");
-        return result.GetValue<string>()!;
+        // If we tried too many times, throw an exception
+        throw lastError!;
     }
 
     [SKFunction]

@@ -4,6 +4,7 @@ using HandlebarsDotNet;
 using Microsoft.SemanticKernel.TemplateEngine;
 using System.Text.Json;
 using HandlebarsDotNet.Compiler;
+using HandlebarsDotNet.IO;
 
 namespace Microsoft.SemanticKernel.Handlebars;
 
@@ -44,18 +45,33 @@ public class HandlebarsPromptTemplateEngine : IPromptTemplateEngine
             writer.Write($"</{parameters["role"]}~>", false);
         });
 
-        handlebarsInstance.RegisterHelper("set", (writer, context, arguments) => 
+        handlebarsInstance.RegisterHelper("set", (writer, options, context, arguments) =>
         {
+            var stringWriter = ReusableStringWriter.Get();
+            using var encodedTextWriter = new EncodedTextWriter(
+                stringWriter,
+                handlebarsInstance.Configuration.TextEncoder,
+                FormatterProvider.Current
+            );
+
+            // Render the block content into the StringWriter
+            options.Template(encodedTextWriter, context);
+
+            // The block content is now captured in the StringWriter and can be retrieved with stringWriter.ToString()
+
+            // Do something with the block content, e.g., log, save to database, etc.
+            string capturedContent = encodedTextWriter.ToString();
+
             // Get the parameters from the template arguments
             var parameters = arguments[0] as IDictionary<string, object>;
 
             if (variables.ContainsKey((string)parameters!["name"]))
             {
-                variables[(string)parameters!["name"]] = parameters["value"];
+                variables[(string)parameters!["name"]] = capturedContent;
             }
             else
             {
-                variables.Add((string)parameters!["name"], parameters["value"]);
+                variables.Add((string)parameters!["name"], capturedContent);
             }
         });
 

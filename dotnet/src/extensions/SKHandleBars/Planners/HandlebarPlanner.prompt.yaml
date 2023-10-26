@@ -19,16 +19,16 @@ template: |
   - You must always use hash arguments for the custom helpers otherwise the template will not render correctly.
   - You must include all required inputs for each helper otherwise the template will not render correctly.
   - Avoid explicitly setting a `response` variable.
-  - Only use helpers in the list below or the built-in helpers in Handlebars (i.e., `#unless`, `#each`, `#with`). Helpers not listed are not supported and will immediately fail.
+  - Only use helpers in the list below or the built-in block helpers in Handlebars (i.e., `#if`, `#unless`, `#each`, `#with`). Helpers not listed are not supported and will immediately fail.
 
   ## Helpers
   You have the following Handlebar helpers that you can use to accomplish the user's goal:
 
-  ### set
+  ### #set
   - *Description*: Updates the handlebar variable with the given name to the given value. It does not print anything to the screen.
   - *Inputs*:
     - `name`: string - The name of the variable to set.
-    - `value`: string - The value to set the variable to.
+    - `content`: string - The value to set the variable to.
   - *Output*: none
 
   ### json
@@ -70,6 +70,27 @@ template: |
   {{#message role="assistant"}}
   Here is the Handlebar template that you requested:
   {{/message}}
+
+  {{#if lastError}}
+  {{#message role="assistant"}}
+  ```
+  {{lastPlan}}
+  ```
+  {{/message}}
+
+  {{#message role="user"}}
+  When I try to run the handlebars template I get this error:
+  ```
+  {{lastError}}
+  ```
+  Can you create a new template that fixes this error?
+  {{/message}}
+
+  {{#message role="assistant"}}
+  I'm sorry for creating a template that causes that error, let me try to solve the goal with a different plan:
+  {{/message}}
+  {{/if}}
+
 template_format: handlebars
 description: A function that generates a plan to accomplish a user's goal.
 input_variables:

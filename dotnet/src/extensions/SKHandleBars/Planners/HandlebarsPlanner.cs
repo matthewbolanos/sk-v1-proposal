@@ -65,10 +65,12 @@ public sealed class HandlebarsPlanner
         // Generate the plan
         var result = await this.Kernel.RunAsync(
             plannerFunction,
-            variables: new Dictionary<string, object>()
+            variables: new Dictionary<string, object?>()
             {
                 { "functions", functions},
-                { "goal", goal }
+                { "goal", goal },
+                { "lastPlan", Configuration.LastPlan },
+                { "lastError", Configuration.LastError }
             }
         );
 
@@ -91,16 +93,22 @@ public class HandlebarsPlannerConfiguration
         List<string>? includedPlugins = default,
         List<string>? excludedPlugins = default,
         List<string>? includedFunctions = default,
-        List<string>? excludedFunctions = default
+        List<string>? excludedFunctions = default,
+        HandlebarsPlan? lastPlan = default,
+        string? lastError = default
     )
     {
         IncludedPlugins = includedPlugins ?? new List<string>();
         ExcludedPlugins = excludedPlugins ?? new List<string>();
         IncludedFunctions = includedFunctions ?? new List<string>();
         ExcludedFunctions = excludedFunctions ?? new List<string>();
+        LastPlan = lastPlan;
+        LastError = lastError;
     }
     public List<string> IncludedPlugins { get; set; }
     public List<string> ExcludedPlugins { get; set; }
     public List<string> IncludedFunctions { get; set; }
     public List<string> ExcludedFunctions { get; set; }
+    public HandlebarsPlan? LastPlan { get; set; }
+    public string? LastError { get; set; }
 }
