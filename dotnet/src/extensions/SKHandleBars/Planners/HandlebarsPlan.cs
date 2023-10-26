@@ -48,18 +48,12 @@ public sealed class HandlebarsPlan : IPlan
 
     public async Task<FunctionResult> InvokeAsync(
         IKernel kernel,
-        SKContext executionContext,
         Dictionary<string, object?> variables,
         CancellationToken cancellationToken = default)
     {
-        string results = kernel.PromptTemplateEngine.Render(kernel, executionContext, template, variables, cancellationToken);
+        string results = kernel.PromptTemplateEngine.Render(kernel, template, variables, cancellationToken);
 
         return new FunctionResult("Plan", "Planner", results);
-    }
-
-    public Task<Orchestration.FunctionResult> InvokeAsync(SKContext context, AIRequestSettings? requestSettings = null, CancellationToken cancellationToken = default)
-    {   
-        throw new NotImplementedException();
     }
 
     public ISKFunction SetAIConfiguration(AIRequestSettings? requestSettings)
@@ -83,6 +77,11 @@ public sealed class HandlebarsPlan : IPlan
     }
 
     SemanticKernel.FunctionView ISKFunction.Describe()
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<Orchestration.FunctionResult> InvokeAsync(SKContext context, AIRequestSettings? requestSettings = null, CancellationToken cancellationToken = default)
     {
         throw new NotImplementedException();
     }

@@ -43,7 +43,7 @@ public class Math
             
             // Run the plan
             try {
-                var result = await plan.InvokeAsync(kernel, kernel.CreateNewContext(), new Dictionary<string, object?>());
+                var result = await plan.InvokeAsync(kernel, new Dictionary<string, object?>());
 
                 Console.WriteLine("\n\nResult: " + result.ToString().Trim() + "\n");
                 return result.GetValue<string>()!;
@@ -58,6 +58,7 @@ public class Math
         // If we tried too many times, throw an exception
         throw lastError!;
     }
+    
 
     [SKFunction]
     [Description("Adds two numbers. For example, {{Math_Add number1=1 number2=2}} returns 3.}}")]
@@ -149,7 +150,7 @@ public class Math
     }
 
     [SKFunction]
-    [Description("Gets the ceiling of a number. For example, {{Math_Ceiling number=5.1}} returns 6.}}")]
+    [Description("Gets the ceiling of a single number. For example, {{Math_Ceiling number=5.1}} returns 6.}}")]
     [SKOutputDescription("The ceiling of the number.")]
     [SKSample(
         inputs: "{\"number\":5.1}",
@@ -163,7 +164,7 @@ public class Math
     }
 
     [SKFunction]
-    [Description("Gets the floor of a number. For example, {{Math_Floor number=5.9}} returns 5.}}")]
+    [Description("Gets the floor of a single number. For example, {{Math_Floor number=5.9}} returns 5.}}")]
     [SKOutputDescription("The floor of the number.")]
     [SKSample(
         inputs: "{\"number\":5.9}",

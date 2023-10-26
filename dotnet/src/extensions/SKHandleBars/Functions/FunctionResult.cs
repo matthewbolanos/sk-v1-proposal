@@ -31,7 +31,6 @@ public sealed class FunctionResult
     /// </summary>
     /// <param name="functionName">Name of executed function.</param>
     /// <param name="pluginName">Name of the plugin containing the function.</param>
-    /// <param name="context">Instance of <see cref="SKContext"/> to pass in function pipeline.</param>
     public FunctionResult(string functionName, string pluginName, object? value)
     {
         this.FunctionName = functionName;

@@ -15,7 +15,7 @@ public class HandlebarsPromptTemplateEngine : IPromptTemplateEngine
     {
     }
 
-    public string Render(IKernel kernel, SKContext executionContext, string template, Dictionary<string,object> variables, CancellationToken cancellationToken = default)
+    public string Render(IKernel kernel, string template, Dictionary<string,object?> variables, CancellationToken cancellationToken = default)
     {
         IHandlebars handlebarsInstance = HandlebarsDotNet.Handlebars.Create(
             new HandlebarsConfiguration
@@ -26,7 +26,7 @@ public class HandlebarsPromptTemplateEngine : IPromptTemplateEngine
         // Add helpers for each function
         foreach (FunctionView function in ((Kernel)kernel).GetFunctionViews())
         {
-            RegisterFunctionAsHelper(kernel, executionContext, handlebarsInstance, function, variables, cancellationToken);
+            RegisterFunctionAsHelper(kernel, handlebarsInstance, function, variables, cancellationToken);
         }
 
         // Add system helpers
@@ -112,7 +112,7 @@ public class HandlebarsPromptTemplateEngine : IPromptTemplateEngine
         return compiledTemplate(variables);
     }
 
-    private void RegisterFunctionAsHelper(IKernel kernel, SKContext executionContext, IHandlebars handlebarsInstance, FunctionView functionView, Dictionary<string,object> variables, CancellationToken cancellationToken = default)
+    private void RegisterFunctionAsHelper(IKernel kernel, IHandlebars handlebarsInstance, FunctionView functionView, Dictionary<string,object?> variables, CancellationToken cancellationToken = default)
     {
         string fullyResolvedFunctionName = functionView.PluginName + "_" + functionView.Name;
 
@@ -189,7 +189,6 @@ public class HandlebarsPromptTemplateEngine : IPromptTemplateEngine
             ISKFunction function = kernel.Functions.GetFunction(functionView.PluginName, functionView.Name);
             FunctionResult result = function.InvokeAsync(
                 kernel,
-                executionContext,
                 variables: variables,
                 cancellationToken: cancellationToken
             ).GetAwaiter().GetResult();

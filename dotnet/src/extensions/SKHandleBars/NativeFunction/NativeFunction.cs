@@ -127,19 +127,9 @@ public sealed class NativeFunction : ISKFunction, IDisposable
     /// <inheritdoc/>
     public FunctionView Describe()
         => this._view.Value;
-
-    /// <inheritdoc/>
-    public async Task<Orchestration.FunctionResult> InvokeAsync(
-        SKContext context,
-        AIRequestSettings? requestSettings = null,
-        CancellationToken cancellationToken = default)
-    {
-        throw new NotImplementedException();
-    }
     
     public async Task<FunctionResult> InvokeAsync(
         IKernel kernel,
-        SKContext executionContext,
         Dictionary<string, object?> variables,
         string? pluginName = null,
         CancellationToken cancellationToken = default
@@ -147,7 +137,7 @@ public sealed class NativeFunction : ISKFunction, IDisposable
     {
         try
         {
-            return await this._function(kernel, executionContext, variables, pluginName, cancellationToken).ConfigureAwait(false);
+            return await this._function(kernel, variables, pluginName, cancellationToken).ConfigureAwait(false);
         }
         catch (Exception e)
         {
@@ -338,7 +328,6 @@ public sealed class NativeFunction : ISKFunction, IDisposable
         // Create the func
         Task<FunctionResult> Function(
             IKernel kernel,
-            SKContext executionContext,
             Dictionary<string, object?> variables,
             string pluginName,
             CancellationToken cancellationToken)
@@ -369,10 +358,6 @@ public sealed class NativeFunction : ISKFunction, IDisposable
         ref bool sawFirstParameter, ref bool hasSKContextParam, ref bool hasCancellationTokenParam, ref bool hasLoggerParam, ref bool hasMemoryParam, ref bool hasCultureParam)
     {
         Type type = parameter.ParameterType;
-
-        // Handle special types based on SKContext data. These can each show up at most once in the method signature,
-        // with the SKContext itself or the primary data from it mapped directly into the method's parameter.
-        // They do not get parameter views as they're not supplied from context variables.
 
         if (!type.IsByRef)
         {
@@ -744,6 +729,11 @@ public sealed class NativeFunction : ISKFunction, IDisposable
     public ISKFunction SetDefaultSkillCollection(IReadOnlyFunctionCollection skills) => this.SetDefaultFunctionCollection(skills);
 
     SemanticKernel.FunctionView ISKFunction.Describe()
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<Orchestration.FunctionResult> InvokeAsync(SKContext context, AIRequestSettings? requestSettings = null, CancellationToken cancellationToken = default)
     {
         throw new NotImplementedException();
     }

@@ -1,7 +1,5 @@
 // Copyright (c) Microsoft. All rights reserved.
 
-using SKContext =  Microsoft.SemanticKernel.Orchestration.SKContext;
-
 namespace Microsoft.SemanticKernel.Handlebars;
 
 public static class HandlebarsIFunctionExtensions
@@ -9,18 +7,17 @@ public static class HandlebarsIFunctionExtensions
     public static async Task<FunctionResult> InvokeAsync(
         this ISKFunction function,
         IKernel kernel,
-        SKContext executionContext,
         Dictionary<string, object?> variables,
         CancellationToken cancellationToken = default)
     {
         FunctionResult functionResult;
         if (function is SemanticFunction semanticFunction)
         {
-            return await semanticFunction.InvokeAsync(kernel, executionContext, variables: variables, cancellationToken: cancellationToken);
+            return await semanticFunction.InvokeAsync(kernel, variables: variables, cancellationToken: cancellationToken);
         }
         if (function is NativeFunction nativeFunction)
         {
-            return await nativeFunction.InvokeAsync(kernel, executionContext, variables: variables, cancellationToken: cancellationToken);
+            return await nativeFunction.InvokeAsync(kernel, variables: variables, cancellationToken: cancellationToken);
         }
         
         throw new Exception("Function is not supported.");

@@ -119,7 +119,6 @@ public sealed class SemanticFunction : ISKFunction, IDisposable
 
     public async Task<FunctionResult> InvokeAsync(
         IKernel kernel,
-        SKContext executionContext,
         Dictionary<string, object?> variables,
         CancellationToken cancellationToken = default
     )
@@ -129,7 +128,7 @@ public sealed class SemanticFunction : ISKFunction, IDisposable
         FunctionResult result;
 
         // Render the prompt
-        string renderedPrompt = kernel.PromptTemplateEngine.Render(kernel, executionContext, PromptTemplate, variables, cancellationToken);
+        string renderedPrompt = kernel.PromptTemplateEngine.Render(kernel, PromptTemplate, variables, cancellationToken);
 
         if(client is IChatCompletion completion)
         {

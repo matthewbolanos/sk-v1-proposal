@@ -20,14 +20,13 @@ public static class HandlebarsIPromptTemplateEngineExtensions
     public static string Render(
         this IPromptTemplateEngine promptTemplateEngine,
         IKernel kernel,
-        SKContext executionContext,
         string template,
-        Dictionary<string,object> variables,
+        Dictionary<string,object?> variables,
         CancellationToken cancellationToken = default)
     {
         if (promptTemplateEngine is HandlebarsPromptTemplateEngine)
         {
-            return ((HandlebarsPromptTemplateEngine)promptTemplateEngine).Render(kernel, executionContext, template, variables, cancellationToken);
+            return ((HandlebarsPromptTemplateEngine)promptTemplateEngine).Render(kernel, template, variables, cancellationToken);
         }
         else
         {

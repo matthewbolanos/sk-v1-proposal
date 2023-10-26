@@ -10,7 +10,6 @@ namespace Microsoft.SemanticKernel.Handlebars;
 
 internal delegate Task<FunctionResult> NativeFunctionDelegate(
     IKernel kernel,
-    SKContext executionContext,
     Dictionary<string, object?> variables,
     string? pluginName,
     CancellationToken cancellationToken);

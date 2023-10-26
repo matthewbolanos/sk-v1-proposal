@@ -36,7 +36,7 @@ public static class HandlebarsIKernelExtensions
     {
         if (kernel is Kernel kernel2)
         {
-            return await function.InvokeAsync(kernel, kernel.CreateNewContext(), variables);
+            return await function.InvokeAsync(kernel, variables);
         }
         else
         {
