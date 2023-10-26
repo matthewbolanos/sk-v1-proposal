@@ -40,7 +40,7 @@ template: |
   - *Description*: {{Description}}
   - *Inputs*:
   {{#each Parameters}}
-    - `{{Name}}`: {{Type}} - {{Description}} {{#if IsRequired}}(required){{else}}(optional){{/if}}
+    - `{{../Name}}_{{Name}}`: {{Type}} - {{Description}} {{#if IsRequired}}(required){{else}}(optional){{/if}}
   {{/each}}
   - *Output*: string - The result of the function.
   {{!-- Additional information that can be added later
