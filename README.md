@@ -2,13 +2,13 @@
 This repo demonstrates what AI apps may look like once v1 of Semantic Kernel is complete.
 
 ## Structure of repo
-- `dotnet` - .NET 6 samples
-    - `samples` – sample apps using proposed v1 API
-        - `01-SimpleChat` – simple chat bot
-        - `02-PersonaChat` – chat bot with a custom persona
-        - `03-SimpleRag` – chat bot that performs basic RAG
-        - `04-DynamicRag` – chat bot that performs dynamic RAG
-    - `src` – "hacks" to make the proposal "work"
+- [dotnet](./dotnet) - .NET 6 samples
+    - [samples](./dotnet/samples) – sample apps using proposed v1 API
+        - [01-SimpleChat](./dotnet/samples/01-SimpleChat) – simple chat bot
+        - [02-PersonaChat](./dotnet/samples/02-PersonaChat) – chat bot with a custom persona
+        - [03-SimpleRag](./dotnet/samples/03-SimpleRag) – chat bot that performs basic RAG
+        - [04-DynamicRag](./dotnet/samples/04-DynamicRag) – chat bot that performs dynamic RAG
+    - [src](./dotnet/src)  – "hacks" to make the proposal "work"
 
 Additional samples (and hacks) will be provided for the Python and Java versions of Semantic Kernel.
 
