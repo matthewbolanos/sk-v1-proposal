@@ -142,9 +142,10 @@ public class HandlebarsPromptTemplateEngine : IPromptTemplateEngine
                     if (arguments.Length >= requiredParameters.Count && arguments.Length <= functionView.Parameters.Count)
                     {
                         var argIndex = 0;
-                        foreach (var param in functionView.Parameters)
+                        foreach (var arg in arguments)
                         {
-                            if (IsExpectedParameterType(param.Type, arguments[argIndex].GetType(), arguments[argIndex]))
+                            var param = functionView.Parameters[argIndex];
+                            if (IsExpectedParameterType(param.Type, arg.GetType(), arg))
                             {
                                 if (variables.ContainsKey(param.Name))
                                 {
