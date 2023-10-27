@@ -39,18 +39,34 @@ public class Math
             });
             var plan = await planner.CreatePlanAsync("Solve the following math problem.\n\n" + math_problem);
             lastPlan = plan;
-            Console.WriteLine("\nPlan: " + lastPlan.ToString().Trim());
+
+
+            Console.ForegroundColor = ConsoleColor.Blue;
+            Console.WriteLine("[Plan]");
+            Console.ForegroundColor = ConsoleColor.DarkBlue;
+            Console.WriteLine(lastPlan.ToString().Trim());
+            Console.ResetColor();
             
             // Run the plan
             try {
                 var result = await plan.InvokeAsync(kernel, new Dictionary<string, object?>());
 
-                Console.WriteLine("\n\nResult: " + result.ToString().Trim() + "\n");
+                Console.ForegroundColor = ConsoleColor.Green;
+                Console.WriteLine("[Result]");
+                Console.ForegroundColor = ConsoleColor.DarkGreen;
+                Console.WriteLine(result.ToString().Trim());
+                Console.ResetColor();
+
                 return result.GetValue<string>()!;
             } catch (Exception e) {
                 // If we get an error, try again
                 lastError = e;
-                Console.WriteLine("\n\nError: " + e.Message);
+
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine("[Error]");
+                Console.ForegroundColor = ConsoleColor.DarkRed;
+                Console.WriteLine(e.Message.ToString().Trim());
+                Console.ResetColor();
             }
             maxTries--;
         }
