@@ -1,4 +1,6 @@
 // Copyright (c) Microsoft. All rights reserved.
+using YamlDotNet.Core;
+using YamlDotNet.Core.Events;
 using YamlDotNet.Serialization;
 
 namespace Microsoft.SemanticKernel.Handlebars;
@@ -26,8 +28,8 @@ internal sealed class SemanticFunctionModel
     [YamlMember(Alias = "output_variable")]
     public VariableViewModel OutputVariable { get; set; }
 
-    [YamlMember(Alias = "models")]
-    public Dictionary<string, Dictionary<string, object>> Models { get; set; }
+    [YamlMember(Alias = "execution_settings")]
+    public List<ExecutionSettingsModel> ExecutionSettings { get; set; }
 }
 
 public class VariableViewModel
@@ -46,4 +48,70 @@ public class VariableViewModel
 
     [YamlMember(Alias = "is_required")]
     public bool IsRequired { get; set;  }
+}
+
+public class ExecutionSettingsModel
+{
+    [YamlMember(Alias = "model_id")]
+    public string ModelId { get; set; }
+
+
+    [YamlMember(Alias = "service_id")]
+    public string ServiceId { get; set; }
+
+    // Dictionary to store arbitrary additional properties
+    private readonly Dictionary<string, object> _additionalProperties = new Dictionary<string, object>();
+
+    [YamlIgnore] // We don't want the YAML serializer to touch this directly
+    public object this[string propertyName]
+    {
+        get
+        {
+            _additionalProperties.TryGetValue(propertyName, out var value);
+            return value;
+        }
+        set
+        {
+            _additionalProperties[propertyName] = value;
+        }
+    }
+}
+
+public class ExecutionSettingsModelConverter : IYamlTypeConverter
+{
+    public bool Accepts(Type type)
+    {
+        return type == typeof(ExecutionSettingsModel);
+    }
+
+    public object? ReadYaml(IParser parser, Type type)
+    {
+        var model = new ExecutionSettingsModel();
+
+        parser.Expect<MappingStart>();
+        while (!parser.TryConsume<MappingEnd>(out _))
+        {
+            var key = parser.Consume<Scalar>().Value;
+
+            switch (key)
+            {
+                case "model_id":
+                    model.ModelId = parser.Consume<Scalar>().Value;
+                    break;
+                case "service_id":
+                    model.ServiceId = parser.Consume<Scalar>().Value;
+                    break;
+                default:
+                    model[key] = parser.Consume<Scalar>().Value;
+                    break;
+            }
+        }
+
+        return model;
+    }
+
+    public void WriteYaml(IEmitter emitter, object? value, Type type)
+    {
+        throw new NotImplementedException();
+    }
 }

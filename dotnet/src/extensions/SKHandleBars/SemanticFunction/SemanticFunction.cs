@@ -35,6 +35,7 @@ public sealed class SemanticFunction : ISKFunction, IDisposable
         CancellationToken cancellationToken = default)
     {
         var deserializer = new DeserializerBuilder()
+            .WithTypeConverter(new ExecutionSettingsModelConverter())
             .Build();
 
         var skFunction = deserializer.Deserialize<SemanticFunctionModel>(yamlContent);
