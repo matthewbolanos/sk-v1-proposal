@@ -11,7 +11,7 @@ public class AzureOpenAIChatCompletion : IChatCompletion
     private readonly AzureChatCompletion azureChatCompletion;
     public string ModelId { get; }
 
-    public AzureOpenAIChatCompletion(string modelId, string endpoint, string apiKey, string? deploymentName = null)
+    public AzureOpenAIChatCompletion(string modelId, string endpoint, string apiKey, string deploymentName)
     {
         ModelId = modelId;
 

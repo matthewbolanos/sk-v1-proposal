@@ -17,7 +17,7 @@ namespace Microsoft.SemanticKernel.Handlebars;
 
 public static class HandlebarsIPromptTemplateEngineExtensions
 {
-    public static string Render(
+    public static async Task<string> RenderAsync(
         this IPromptTemplateEngine promptTemplateEngine,
         IKernel kernel,
         string template,
@@ -26,7 +26,7 @@ public static class HandlebarsIPromptTemplateEngineExtensions
     {
         if (promptTemplateEngine is HandlebarsPromptTemplateEngine)
         {
-            return ((HandlebarsPromptTemplateEngine)promptTemplateEngine).Render(kernel, template, variables, cancellationToken);
+            return await Task.Run(() => ((HandlebarsPromptTemplateEngine)promptTemplateEngine).Render(kernel, template, variables, cancellationToken));
         }
         else
         {

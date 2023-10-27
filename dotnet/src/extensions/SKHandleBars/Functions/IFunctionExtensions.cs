@@ -8,16 +8,17 @@ public static class HandlebarsIFunctionExtensions
         this ISKFunction function,
         IKernel kernel,
         Dictionary<string, object?> variables,
-        CancellationToken cancellationToken = default)
+        bool streaming = false,
+        CancellationToken cancellationToken = default
+    )
     {
-        FunctionResult functionResult;
         if (function is SemanticFunction semanticFunction)
         {
-            return await semanticFunction.InvokeAsync(kernel, variables: variables, cancellationToken: cancellationToken);
+            return await semanticFunction.InvokeAsync(kernel, variables: variables, cancellationToken: cancellationToken, streaming: streaming);
         }
         if (function is NativeFunction nativeFunction)
         {
-            return await nativeFunction.InvokeAsync(kernel, variables: variables, cancellationToken: cancellationToken);
+            return await nativeFunction.InvokeAsync(kernel, variables: variables, cancellationToken: cancellationToken,  streaming: streaming);
         }
         
         throw new Exception("Function is not supported.");
@@ -26,7 +27,6 @@ public static class HandlebarsIFunctionExtensions
     public static FunctionView Describe2(
         this ISKFunction function)
     {
-        FunctionView functionView;
         if (function is SemanticFunction semanticFunction)
         {
             return semanticFunction.Describe();

@@ -51,7 +51,7 @@ public sealed class HandlebarsPlan : IPlan
         Dictionary<string, object?> variables,
         CancellationToken cancellationToken = default)
     {
-        string results = kernel.PromptTemplateEngine.Render(kernel, template, variables, cancellationToken);
+        string results = await kernel.PromptTemplateEngine.RenderAsync(kernel, template, variables, cancellationToken);
 
         return new FunctionResult("Plan", "Planner", results);
     }

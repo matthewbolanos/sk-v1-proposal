@@ -1,17 +1,14 @@
 // Copyright (c) Microsoft. All rights reserved.
 
-using System.ComponentModel;
-using System.Diagnostics;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.SemanticKernel.AI;
 using Microsoft.SemanticKernel.AI.TextCompletion;
-using Microsoft.SemanticKernel.Orchestration;
 using Microsoft.SemanticKernel.Services;
 using YamlDotNet.Serialization;
 using Microsoft.SemanticKernel.AI.ChatCompletion;
 using System.Text.RegularExpressions;
-using Microsoft.SemanticKernel.TemplateEngine;
+using System.Runtime.CompilerServices;
 
 namespace Microsoft.SemanticKernel.Handlebars;
 
@@ -65,9 +62,9 @@ public sealed class SemanticFunction : ISKFunction, IDisposable
 
             inputParameters.Add(new ParameterView(
                 inputParameter.Name,
+                parameterViewType,
                 inputParameter.Description,
                 inputParameter.DefaultValue,
-                parameterViewType,
                 inputParameter.IsRequired
             ));
         }
@@ -120,7 +117,8 @@ public sealed class SemanticFunction : ISKFunction, IDisposable
     public async Task<FunctionResult> InvokeAsync(
         IKernel kernel,
         Dictionary<string, object?> variables,
-        CancellationToken cancellationToken = default
+        CancellationToken cancellationToken = default,
+        bool streaming = false
     )
     {
         // TODO: make dynamic
@@ -128,7 +126,7 @@ public sealed class SemanticFunction : ISKFunction, IDisposable
         FunctionResult result;
 
         // Render the prompt
-        string renderedPrompt = kernel.PromptTemplateEngine.Render(kernel, PromptTemplate, variables, cancellationToken);
+        string renderedPrompt = await kernel.PromptTemplateEngine.RenderAsync(kernel, PromptTemplate, variables, cancellationToken);
 
         if(client is IChatCompletion completion)
         {
@@ -158,11 +156,18 @@ public sealed class SemanticFunction : ISKFunction, IDisposable
                 }
             }
             
-            // Get the completions
-            IReadOnlyList<IChatResult> completionResults = await completion.GetChatCompletionsAsync(chatMessages, cancellationToken: cancellationToken).ConfigureAwait(false);
-            var modelResults = completionResults.Select(c => c.ModelResult).ToArray();
-            result = new FunctionResult(this.Name, this.PluginName, modelResults[0].GetOpenAIChatResult().Choice.Message.Content);
-            result.Metadata.Add(AIFunctionResultExtensions.ModelResultsMetadataKey, modelResults);
+            if (streaming)
+            {
+                ConfiguredCancelableAsyncEnumerable<IChatStreamingResult> completionResults = completion.GetStreamingChatCompletionsAsync(chatMessages, cancellationToken: cancellationToken).ConfigureAwait(false);
+                result = new FunctionResult(this.Name, this.PluginName, ConvertToStrings(completionResults), ConvertToFinalStringAsync(completionResults));
+            }
+            else
+            {
+                IReadOnlyList<IChatResult> completionResults = await completion.GetChatCompletionsAsync(chatMessages, cancellationToken: cancellationToken).ConfigureAwait(false);
+                var modelResults = completionResults.Select(c => c.ModelResult).ToArray();
+                result = new FunctionResult(this.Name, this.PluginName, modelResults[0].GetOpenAIChatResult().Choice.Message.Content);
+                result.Metadata.Add(AIFunctionResultExtensions.ModelResultsMetadataKey, modelResults);
+            }
         }
         else
         {
@@ -170,6 +175,31 @@ public sealed class SemanticFunction : ISKFunction, IDisposable
         }
 
         return result;
+    }
+
+    private async IAsyncEnumerable<string> ConvertToStrings(ConfiguredCancelableAsyncEnumerable<IChatStreamingResult> completionResults)
+    {
+        await foreach (var result in completionResults)
+        {
+            await foreach (var message in result.GetStreamingChatMessageAsync())
+            {
+                yield return message.Content;
+            }
+        }
+    }
+
+    private async Task<string> ConvertToFinalStringAsync(ConfiguredCancelableAsyncEnumerable<IChatStreamingResult> completionResults)
+    {
+        string finalString = "";
+        await foreach (var result in completionResults)
+        {
+            await foreach (var message in result.GetStreamingChatMessageAsync())
+            {
+                finalString += message.Content;
+            }
+        }
+
+        return finalString;
     }
 
     private readonly ILogger _logger;
@@ -209,7 +239,7 @@ public sealed class SemanticFunction : ISKFunction, IDisposable
         throw new NotImplementedException();
     }
 
-    Task<Orchestration.FunctionResult> ISKFunction.InvokeAsync(SKContext context, AIRequestSettings? requestSettings, CancellationToken cancellationToken)
+    Task<Orchestration.FunctionResult> ISKFunction.InvokeAsync(Orchestration.SKContext context, AIRequestSettings? requestSettings, CancellationToken cancellationToken)
     {
         throw new NotImplementedException();
     }

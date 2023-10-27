@@ -3,6 +3,8 @@ using YamlDotNet.Serialization;
 
 namespace Microsoft.SemanticKernel.Handlebars;
 
+#pragma warning disable CS8618 // Non-nullable field is uninitialized. Consider declaring as nullable.
+
 internal sealed class SemanticFunctionModel
 {
     [YamlMember(Alias = "name")]

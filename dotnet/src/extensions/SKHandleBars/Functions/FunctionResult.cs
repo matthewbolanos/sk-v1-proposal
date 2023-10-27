@@ -10,57 +10,106 @@ namespace Microsoft.SemanticKernel.Handlebars;
 /// </summary>
 public sealed class FunctionResult
 {
-    /// <summary>
-    /// Name of executed function.
-    /// </summary>
     public string FunctionName { get; internal set; }
 
-    /// <summary>
-    /// Name of the plugin containing the function.
-    /// </summary>
-    public string PluginName { get; internal set; }
-    internal object? Value { get; private set; } = null;
+    public string? PluginName { get; internal set; }
 
-    /// <summary>
-    /// Metadata for storing additional information about function execution result.
-    /// </summary>
     public Dictionary<string, object> Metadata { get; internal set; } = new Dictionary<string, object>();
 
-    /// <summary>
-    /// Initializes a new instance of the <see cref="FunctionResult"/> class.
-    /// </summary>
-    /// <param name="functionName">Name of executed function.</param>
-    /// <param name="pluginName">Name of the plugin containing the function.</param>
-    public FunctionResult(string functionName, string pluginName, object? value)
+    private readonly bool isStreaming = false;
+
+    private readonly object? value = null;
+
+    private readonly IAsyncEnumerable<object?>? streamingValue = null;
+
+    private readonly Task? finalValue = null;
+
+    public FunctionResult(string functionName, string? pluginName, IAsyncEnumerable<object?> streamingValue, Task finalValue)
     {
         this.FunctionName = functionName;
         this.PluginName = pluginName;
-        this.Value = value;
+        this.streamingValue = streamingValue;
+        this.finalValue = finalValue;
+        isStreaming = true;
+    }
+    public FunctionResult(string functionName, string? pluginName, object? value = default)
+    {
+        this.FunctionName = functionName;
+        this.PluginName = pluginName;
+        this.value = value;
     }
 
-    /// <summary>
-    /// Returns function result value.
-    /// </summary>
-    /// <typeparam name="T">Target type for result value casting.</typeparam>
-    /// <exception cref="InvalidCastException">Thrown when it's not possible to cast result value to <typeparamref name="T"/>.</exception>
-    public T? GetValue<T>()
+    public async Task<T>? GetValueAsync<T>()
     {
-        if (this.Value is null)
+        if (isStreaming)
         {
-            return default;
+            if (this.finalValue is null)
+            {
+                throw new InvalidOperationException("Cannot get final value from streaming result.");
+            }
+            if (this.finalValue is Task<T> typedTaskResult)
+            {
+                return await typedTaskResult;
+            }
+
+            throw new InvalidCastException($"Cannot cast {this.finalValue.GetType()} to {typeof(List<T>)}");
         }
 
-        if (this.Value is T typedResult)
+        if (this.value is null)
+        {
+            return default!;
+        }
+
+        if (this.value is T typedResult)
         {
             return typedResult;
         }
 
-        throw new InvalidCastException($"Cannot cast {this.Value.GetType()} to {typeof(T)}");
+        throw new InvalidCastException($"Cannot cast {this.value.GetType()} to {typeof(T)}");
     }
 
-    /// <summary>
-    /// Get typed value from metadata.
-    /// </summary>
+
+
+    public T? GetValue<T>()
+    {
+        if (isStreaming)
+        {
+            throw new InvalidOperationException("Cannot get value from streaming result; use GetValueAsync instead.");
+        }
+
+        if (this.value is null)
+        {
+            return default!;
+        }
+
+        if (this.value is T typedResult)
+        {
+            return typedResult;
+        }
+
+        throw new InvalidCastException($"Cannot cast {this.value.GetType()} to {typeof(T)}");
+    }
+
+    public IAsyncEnumerable<T>? GetStreamingValue<T>()
+    {
+        if (isStreaming)
+        {
+            if (this.streamingValue is null)
+            {
+                throw new InvalidOperationException("Cannot get streaming value from non-streaming result.");
+            }
+
+            if (this.streamingValue is IAsyncEnumerable<T> typedResult)
+            {
+                return typedResult;
+            }
+
+            throw new InvalidCastException($"Cannot cast {this.streamingValue.GetType()} to {typeof(IAsyncEnumerable<T>)}");
+        }
+
+        throw new InvalidOperationException("Cannot get streaming value from non-streaming result.");
+    }
+
     public bool TryGetMetadataValue<T>(string key, out T value)
     {
         if (this.Metadata.TryGetValue(key, out object? valueObject) &&
@@ -74,6 +123,5 @@ public sealed class FunctionResult
         return false;
     }
 
-    /// <inheritdoc/>
-    public override string ToString() => this.Value?.ToString() ?? base.ToString();
+    public override string? ToString() => this.value?.ToString() ?? base.ToString();
 }

@@ -12,7 +12,7 @@ namespace Microsoft.SemanticKernel.Handlebars;
 /// <param name="IsRequired">Whether the parameter is required.</param>
 public sealed record ParameterView(
     string Name,
+    Type Type,
     string? Description = null,
     string? DefaultValue = null,
-    Type? Type = null,
     bool? IsRequired = null);

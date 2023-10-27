@@ -47,9 +47,15 @@ while (true)
     // See Plugins/ChatPlugin/GroundedChat.prompt.yaml for the full prompt
     var result = await kernel.RunAsync(
         chatFunction,
-        new() {{ "messages", chatHistory }}
+        new() {{ "messages", chatHistory }},
+        streaming: true
     );
 
-    Console.WriteLine("Assistant > " + result);
-    chatHistory.AddAssistantMessage(result.GetValue<string>()!);
+    Console.Write("Assistant > ");
+    await foreach(var message in result.GetStreamingValue<string>()!)
+    {
+        Console.Write(message);
+    }
+    Console.WriteLine();
+    chatHistory.AddAssistantMessage(await result.GetValueAsync<string>()!);
 }

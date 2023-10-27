@@ -31,31 +31,17 @@ public static class HandlebarsIKernelExtensions
     public static async Task<FunctionResult> RunAsync(
         this IKernel kernel,
         ISKFunction function,
-        Dictionary<string, object?> variables
+        Dictionary<string, object?> variables,
+        bool streaming = false
         )
     {
-        if (kernel is Kernel kernel2)
+        if (kernel is Kernel)
         {
-            return await function.InvokeAsync(kernel, variables);
+            return await function.InvokeAsync(kernel, variables, streaming: streaming);
         }
         else
         {
             throw new Exception("Kernel is not a HandlebarsKernel.");
-        }
-    }
-
-    public static async Task<FunctionResult> RunAsync(
-        this IKernel kernel,
-        Dictionary<string, object?> variables
-        )
-    {
-        if (kernel is Kernel kernel2 && kernel2.EntryPoint != null)
-        {
-            return await kernel2.RunAsync(kernel2.EntryPoint, variables);
-        }
-        else
-        {
-            throw new Exception("Entry point not provided.");
         }
     }
 }

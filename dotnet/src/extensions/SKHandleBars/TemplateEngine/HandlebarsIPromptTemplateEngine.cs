@@ -77,7 +77,7 @@ public class HandlebarsPromptTemplateEngine : IPromptTemplateEngine
 
         handlebarsInstance.RegisterHelper("get", (writer, context, arguments) => 
         {
-            string parameter = arguments[0].ToString();
+            string parameter = arguments[0].ToString()!;
 
             if (variables.ContainsKey(parameter))
             {
@@ -247,7 +247,7 @@ public class HandlebarsPromptTemplateEngine : IPromptTemplateEngine
         var isValidNumericType = IsNumericType(functionViewType) && IsNumericType(handlebarArgumentType);
         if (IsNumericType(functionViewType) && !IsNumericType(handlebarArgumentType))
         {
-            isValidNumericType = TryParseAnyNumber(handlebarArgValue.ToString());
+            isValidNumericType = TryParseAnyNumber(handlebarArgValue.ToString()!);
         }
             
         return functionViewType == handlebarArgumentType || isValidNumericType || handlebarArgumentType == typeof(object) || functionViewType.IsGenericType;

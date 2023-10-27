@@ -6,13 +6,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.SemanticKernel.AI;
 using Microsoft.SemanticKernel.AI.TextCompletion;
-using Microsoft.SemanticKernel.Orchestration;
-using Microsoft.SemanticKernel.Services;
-using YamlDotNet.Serialization;
-using Microsoft.SemanticKernel.AI.ChatCompletion;
 using System.Text.RegularExpressions;
-using Microsoft.SemanticKernel.TemplateEngine;
-using System.Security.Cryptography;
 using System.Reflection;
 using Microsoft.SemanticKernel.Diagnostics;
 using System.Text.Json;
@@ -132,7 +126,8 @@ public sealed class NativeFunction : ISKFunction, IDisposable
         IKernel kernel,
         Dictionary<string, object?> variables,
         string? pluginName = null,
-        CancellationToken cancellationToken = default
+        CancellationToken cancellationToken = default,
+        bool streaming = false
     )
     {
         try
@@ -209,7 +204,7 @@ public sealed class NativeFunction : ISKFunction, IDisposable
         string description,
         ILogger logger)
     {
-
+        this.PluginName = ""; //TODO: remove
         this._logger = logger;
 
         this._function = delegateFunction;
@@ -323,13 +318,13 @@ public sealed class NativeFunction : ISKFunction, IDisposable
         }
 
         // Get marshaling func for the return value.
-        Func<string, string, object?, Task<FunctionResult>> returnFunc = GetReturnValueMarshalerDelegate(method);
+        Func<string, string?, object?, Task<FunctionResult>> returnFunc = GetReturnValueMarshalerDelegate(method);
 
         // Create the func
         Task<FunctionResult> Function(
             IKernel kernel,
             Dictionary<string, object?> variables,
-            string pluginName,
+            string? pluginName,
             CancellationToken cancellationToken)
         {
             // Create the arguments.
@@ -363,14 +358,14 @@ public sealed class NativeFunction : ISKFunction, IDisposable
         {
             // Use either the parameter's name or an override from an applied SKName attribute.
             SKNameAttribute? nameAttr = parameter.GetCustomAttribute<SKNameAttribute>(inherit: true);
-            string name = nameAttr?.Name?.Trim() ?? SanitizeMetadataName(parameter.Name);
+            string name = nameAttr?.Name?.Trim() ?? SanitizeMetadataName(parameter.Name!);
             bool nameIsInput = name.Equals("input", StringComparison.OrdinalIgnoreCase);
             ThrowForInvalidSignatureIf(name.Length == 0, method, $"Parameter {parameter.Name}'s context attribute defines an invalid name.");
             ThrowForInvalidSignatureIf(sawFirstParameter && nameIsInput, method, "Only the first parameter may be named 'input'");
 
             // Use either the parameter's optional default value as contained in parameter metadata (e.g. `string s = "hello"`)
             // or an override from an applied SKParameter attribute. Note that a default value may be null.
-            DefaultValueAttribute defaultValueAttribute = parameter.GetCustomAttribute<DefaultValueAttribute>(inherit: true);
+            DefaultValueAttribute? defaultValueAttribute = parameter.GetCustomAttribute<DefaultValueAttribute>(inherit: true);
             bool hasDefaultValue = defaultValueAttribute is not null;
             object? defaultValue = defaultValueAttribute?.Value;
             if (!hasDefaultValue && parameter.HasDefaultValue)
@@ -404,7 +399,7 @@ public sealed class NativeFunction : ISKFunction, IDisposable
                 throw new SKException($"Missing value for parameter '{name}'",
                     new ArgumentException("Missing value function parameter", name));
 
-                object ? Process(object value)
+                object ? Process(object? value)
                 {
                     // If the parameter is a string, we need to convert it to the right type using a JSON deserializer.
                     if (value is string && type != typeof(string))
@@ -422,9 +417,9 @@ public sealed class NativeFunction : ISKFunction, IDisposable
 
             var parameterView = new ParameterView(
                 name,
+                Type: parameter.ParameterType,
                 parameter.GetCustomAttribute<DescriptionAttribute>(inherit: true)?.Description ?? string.Empty,
                 defaultValue?.ToString() ?? string.Empty,
-                Type: parameter.ParameterType,
                 IsRequired: !parameter.IsOptional);
 
             return (parameterFunc, parameterView);
@@ -437,7 +432,7 @@ public sealed class NativeFunction : ISKFunction, IDisposable
     /// <summary>
     /// Gets a delegate for handling the result value of a method, converting it into the <see cref="Task{SKContext}"/> to return from the invocation.
     /// </summary>
-    private static Func<string, string, object?, Task<FunctionResult>> GetReturnValueMarshalerDelegate(MethodInfo method)
+    private static Func<string, string?, object?, Task<FunctionResult>> GetReturnValueMarshalerDelegate(MethodInfo method)
     {
         // Handle each known return type for the method
         Type returnType = method.ReturnType;
@@ -563,7 +558,7 @@ public sealed class NativeFunction : ISKFunction, IDisposable
             if (targetType.IsGenericType && targetType.GetGenericTypeDefinition() == typeof(Nullable<>))
             {
                 wasNullable = true;
-                targetType = Nullable.GetUnderlyingType(targetType);
+                targetType = Nullable.GetUnderlyingType(targetType)!;
             }
 
             // For enums, delegate to Enum.Parse, special-casing null if it was actually Nullable<EnumType>.
@@ -594,11 +589,11 @@ public sealed class NativeFunction : ISKFunction, IDisposable
                     // If that fails, try with the invariant culture and allow any exception to propagate.
                     try
                     {
-                        return converter.ConvertFromString(context: null, cultureInfo, input);
+                        return converter.ConvertFromString(context: null, cultureInfo, input)!;
                     }
-                    catch (Exception e)
+                    catch
                     {
-                        return converter.ConvertFromInvariantString(input);
+                        return converter.ConvertFromInvariantString(input)!;
                     }
                 };
             }
@@ -621,7 +616,7 @@ public sealed class NativeFunction : ISKFunction, IDisposable
             if (targetType.IsGenericType && targetType.GetGenericTypeDefinition() == typeof(Nullable<>))
             {
                 wasNullable = true;
-                targetType = Nullable.GetUnderlyingType(targetType);
+                targetType = Nullable.GetUnderlyingType(targetType)!;
             }
 
             // For enums, just ToString() and allow the object override to do the right thing.
@@ -646,7 +641,7 @@ public sealed class NativeFunction : ISKFunction, IDisposable
                         return null!;
                     }
 
-                    return converter.ConvertToString(context: null, cultureInfo, input);
+                    return converter.ConvertToString(context: null, cultureInfo, input)!;
                 };
             }
 
@@ -733,7 +728,7 @@ public sealed class NativeFunction : ISKFunction, IDisposable
         throw new NotImplementedException();
     }
 
-    public Task<Orchestration.FunctionResult> InvokeAsync(SKContext context, AIRequestSettings? requestSettings = null, CancellationToken cancellationToken = default)
+    public Task<Orchestration.FunctionResult> InvokeAsync(Orchestration.SKContext context, AIRequestSettings? requestSettings = null, CancellationToken cancellationToken = default)
     {
         throw new NotImplementedException();
     }
