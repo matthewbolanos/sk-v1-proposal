@@ -4,7 +4,8 @@ using Microsoft.SemanticKernel.Handlebars;
 using ISKFunction = Microsoft.SemanticKernel.ISKFunction;
 using IKernel = Microsoft.SemanticKernel.IKernel;
 
-string AzureOpenAIDeploymentName = Env.Var("AzureOpenAI:ChatCompletionDeploymentName")!;
+string Gpt35TurboDeploymentName = Env.Var("AzureOpenAI:Gpt35TurboDeploymentName")!;
+string Gpt4DeploymentName = Env.Var("AzureOpenAI:Gpt4DeploymentName")!;
 string AzureOpenAIEndpoint = Env.Var("AzureOpenAI:Endpoint")!;
 string AzureOpenAIApiKey = Env.Var("AzureOpenAI:ApiKey")!;
 string BingApiKey = Env.Var("Bing:ApiKey")!;
@@ -12,7 +13,8 @@ string currentDirectory = Directory.GetCurrentDirectory();
 
 // Initialize the required functions and services for the kernel
 ISKFunction chatFunction = SemanticFunction.GetFunctionFromYaml(currentDirectory + "/Plugins/ChatPlugin/GroundedChat.prompt.yaml");
-IChatCompletion gpt35Turbo = new AzureOpenAIChatCompletion("gpt-3.5-turbo", AzureOpenAIEndpoint, AzureOpenAIApiKey, AzureOpenAIDeploymentName);
+IChatCompletion gpt35Turbo = new AzureOpenAIChatCompletion("gpt-3.5-turbo", AzureOpenAIEndpoint, AzureOpenAIApiKey, Gpt35TurboDeploymentName);
+IChatCompletion gpt4 = new AzureOpenAIChatCompletion("gpt-4", AzureOpenAIEndpoint, AzureOpenAIApiKey, Gpt4DeploymentName);
 
 // Create the search plugin
 List<ISKFunction> searchPluginFunctions = NativeFunction.GetFunctionsFromObject(new Search(BingApiKey));
@@ -24,7 +26,7 @@ Plugin searchPlugin = new(
 
 // Create new kernel
 IKernel kernel = new Kernel(
-    aiServices: new () { gpt35Turbo },
+    aiServices: new () { gpt35Turbo, gpt4 },
     plugins: new () { searchPlugin },
     promptTemplateEngines: new () {new HandlebarsPromptTemplateEngine()}
 );

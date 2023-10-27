@@ -55,6 +55,9 @@ public class ExecutionSettingsModel
     [YamlMember(Alias = "model_id")]
     public string ModelId { get; set; }
 
+    [YamlMember(Alias = "model_id_pattern")]
+    public string ModelIdPattern { get; set; }
+
 
     [YamlMember(Alias = "service_id")]
     public string ServiceId { get; set; }
@@ -97,6 +100,9 @@ public class ExecutionSettingsModelConverter : IYamlTypeConverter
             {
                 case "model_id":
                     model.ModelId = parser.Consume<Scalar>().Value;
+                    break;
+                case "model_id_pattern":
+                    model.ModelIdPattern = parser.Consume<Scalar>().Value;
                     break;
                 case "service_id":
                     model.ServiceId = parser.Consume<Scalar>().Value;

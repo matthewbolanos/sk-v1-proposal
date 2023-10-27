@@ -35,4 +35,5 @@ output_variable:
     type: string
     description: The Bing search to perform on behalf of the user.
 execution_settings:
-  - model_id: gpt-3.5-turbo*
+  - model_id_pattern: ^gpt-3\.?5-turbo
+    temperature: 0.3

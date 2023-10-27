@@ -5,16 +5,14 @@ using Azure.AI.OpenAI;
 using Microsoft.SemanticKernel.AI;
 using Microsoft.SemanticKernel.AI.ChatCompletion;
 using Microsoft.SemanticKernel.Connectors.AI.OpenAI.ChatCompletion;
+using Microsoft.SemanticKernel.Orchestration;
 
-public class AzureOpenAIChatCompletion : IChatCompletion
+public class AzureOpenAIChatCompletion : AIService, IChatCompletion
 {
     private readonly AzureChatCompletion azureChatCompletion;
-    public string ModelId { get; }
 
-    public AzureOpenAIChatCompletion(string modelId, string endpoint, string apiKey, string deploymentName)
+    public AzureOpenAIChatCompletion(string modelId, string endpoint, string apiKey, string deploymentName): base(modelId)
     {
-        ModelId = modelId;
-
         this.azureChatCompletion = new AzureChatCompletion(
             deploymentName,
             endpoint,
@@ -35,5 +33,15 @@ public class AzureOpenAIChatCompletion : IChatCompletion
     public IAsyncEnumerable<IChatStreamingResult> GetStreamingChatCompletionsAsync(ChatHistory chat, AIRequestSettings? requestSettings = null, CancellationToken cancellationToken = default)
     {
         return this.azureChatCompletion.GetStreamingChatCompletionsAsync(chat, requestSettings, cancellationToken);
+    }
+
+    public override ModelResult GetModelResultAsync(string prompt)
+    {
+        throw new NotImplementedException();
+    }
+
+    public override ModelResult GetModelStreamingResultAsync(string prompt)
+    {
+        throw new NotImplementedException();
     }
 }

@@ -103,4 +103,4 @@ output_variable:
     type: string
     description: The plan that the assistant will use to accomplish the user's goal.
 execution_settings:
-  - model_id: gpt-3.5-turbo*
+  - model_id_pattern: ^gpt-3\.?5-turbo

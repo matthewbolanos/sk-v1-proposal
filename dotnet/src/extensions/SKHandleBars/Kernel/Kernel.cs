@@ -23,6 +23,7 @@ public class Kernel : IKernel
 	public ISKFunction? EntryPoint { get; }
 
 	private readonly List<Plugin> plugins;
+	private readonly List<IAIService> AIServices;
 
 	public Kernel(
 		List<IAIService>? aiServices = null,
@@ -72,6 +73,8 @@ public class Kernel : IKernel
 			promptTemplateEngine = new HandlebarsPromptTemplateEngine();
 		}
 
+		this.AIServices = aiServices;
+
 		this.kernel = new SemanticKernel.Kernel(
 			functionCollection,
 			services.Build(),
@@ -116,6 +119,14 @@ public class Kernel : IKernel
 	public T GetService<T>(string? name = null) where T : IAIService
 	{
 		return this.kernel.GetService<T>(name);
+	}
+	public IAIService GetDefaultService(string? name = null)
+	{
+		return this.AIServices[0];
+	}
+	public List<IAIService> GetAllServices()
+	{
+		return this.AIServices;
 	}
 
 	public IPromptTemplateEngine PromptTemplateEngine => this.kernel.PromptTemplateEngine;

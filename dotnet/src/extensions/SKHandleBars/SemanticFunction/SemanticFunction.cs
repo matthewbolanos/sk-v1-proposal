@@ -20,6 +20,8 @@ public sealed class SemanticFunction : ISKFunction, IDisposable
 
     public string Description { get; }
 
+    private List<ExecutionSettingsModel> ExecutionSettings { get; }
+
     public static SemanticFunction GetFunctionFromYaml(
         string filepath,
         ILoggerFactory? loggerFactory = null,
@@ -39,7 +41,6 @@ public sealed class SemanticFunction : ISKFunction, IDisposable
             .Build();
 
         var skFunction = deserializer.Deserialize<SemanticFunctionModel>(yamlContent);
-
 
         List<ParameterView> inputParameters = new List<ParameterView>();
         foreach(var inputParameter in skFunction.InputVariables)
@@ -77,6 +78,7 @@ public sealed class SemanticFunction : ISKFunction, IDisposable
             description: skFunction.Description,
             inputParameters: inputParameters,
             // outputParameter: skFunction.OutputVariable,
+            executionSettings: skFunction.ExecutionSettings,
             loggerFactory: loggerFactory
         );
 
@@ -90,6 +92,7 @@ public sealed class SemanticFunction : ISKFunction, IDisposable
         string description,
         List<ParameterView> inputParameters,
         // SKVariableView outputParameter,
+        List<ExecutionSettingsModel> executionSettings,
         ILoggerFactory? loggerFactory = null)
     {
         this._logger = loggerFactory is not null ? loggerFactory.CreateLogger(typeof(SemanticFunction)) : NullLogger.Instance;
@@ -102,6 +105,7 @@ public sealed class SemanticFunction : ISKFunction, IDisposable
 
         this.Name = functionName;
         this.Description = description;
+        this.ExecutionSettings = executionSettings!;
 
     }
 
@@ -122,8 +126,39 @@ public sealed class SemanticFunction : ISKFunction, IDisposable
         bool streaming = false
     )
     {
-        // TODO: make dynamic
-        IAIService client = kernel.GetService<IAIService>("gpt-3.5-turbo");
+        IAIService? client = null;
+        foreach(ExecutionSettingsModel executionSettings in this.ExecutionSettings)
+        {
+            foreach(IAIService aIService in ((Kernel)kernel).GetAllServices())
+            {
+                if (aIService is AIService service)
+                {
+                    if (executionSettings.ModelId == service.ModelId)
+                    {
+                        client = aIService;
+                        break;
+                    }
+
+                    // check if regex matches
+                    if (executionSettings.ModelIdPattern != null && Regex.IsMatch(service.ModelId, executionSettings.ModelIdPattern))
+                    {
+                        client = aIService;
+                        break;
+                    }
+                }
+                else
+                {
+                    throw new NotImplementedException();
+                }
+            }
+            if (client != null)
+            {
+                break;
+            }
+        }
+
+        client ??= ((Kernel)kernel).GetDefaultService();
+
         FunctionResult result;
 
         // Render the prompt

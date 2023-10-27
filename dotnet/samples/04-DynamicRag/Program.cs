@@ -4,14 +4,16 @@ using Microsoft.SemanticKernel.Handlebars;
 using ISKFunction = Microsoft.SemanticKernel.ISKFunction;
 using IKernel = Microsoft.SemanticKernel.IKernel;
 
-string AzureOpenAIDeploymentName = Env.Var("AzureOpenAI:ChatCompletionDeploymentName")!;
+string Gpt35TurboDeploymentName = Env.Var("AzureOpenAI:Gpt35TurboDeploymentName")!;
+string Gpt4DeploymentName = Env.Var("AzureOpenAI:Gpt4DeploymentName")!;
 string AzureOpenAIEndpoint = Env.Var("AzureOpenAI:Endpoint")!;
 string AzureOpenAIApiKey = Env.Var("AzureOpenAI:ApiKey")!;
 var currentDirectory = Directory.GetCurrentDirectory();
 
 // Initialize the required functions and services for the kernel
 ISKFunction chatFunction = SemanticFunction.GetFunctionFromYaml(currentDirectory + "/Plugins/ChatPlugin/Chat.prompt.yaml");
-IChatCompletion gpt35Turbo = new AzureOpenAIChatCompletion("gpt-3.5-turbo", AzureOpenAIEndpoint, AzureOpenAIApiKey, AzureOpenAIDeploymentName);
+IChatCompletion gpt35Turbo = new AzureOpenAIChatCompletion("gpt-3.5-turbo", AzureOpenAIEndpoint, AzureOpenAIApiKey, Gpt35TurboDeploymentName);
+IChatCompletion gpt4 = new AzureOpenAIChatCompletion("gpt-4", AzureOpenAIEndpoint, AzureOpenAIApiKey, Gpt4DeploymentName);
 
 // Create intent plugin
 Plugin intentPlugin = new(
@@ -29,7 +31,7 @@ Plugin mathPlugin = new(
 
 // Create new kernel
 IKernel kernel = new Kernel(
-    aiServices: new () { gpt35Turbo },
+    aiServices: new () { gpt35Turbo, gpt4 },
     plugins: new () { intentPlugin, mathPlugin },
     promptTemplateEngines: new () {new HandlebarsPromptTemplateEngine()}
 );
@@ -47,7 +49,10 @@ while (true)
     // See Plugins/ChatPlugin/GroundedChat.prompt.yaml for the full prompt
     var result = await kernel.RunAsync(
         chatFunction,
-        new() {{ "messages", chatHistory }},
+        variables: new() {
+            { "persona", "You are a snarky (yet helpful) teenage assistant. Make sure to use hip slang in every response." },
+            { "messages", chatHistory }
+        },
         streaming: true
     );
 
