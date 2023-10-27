@@ -1,0 +1,25 @@
+name: SimpleChat
+template: |
+  [
+  {{#each messages}}
+    { "role":"{{#message role=role}}", "content": "{{#message content=content}}", "function_call": "{{#message function_call=function_call}}", "name": "{{#message name=name}}" },
+  {{/each}}
+  ]
+template_format: handlebars
+description: A function that uses the chat history to respond to the user.
+input_variables:
+  - name: messages
+    type: ChatHistory
+    description: The history of the chat.
+    is_required: true
+output_variables:
+  - name: assistant_response
+    type: string
+    description: The response from the assistant.
+models:
+  default:
+    max_tokens: 150
+  gpt4:
+    temperature: 1.0
+  gpt35turbo:
+    temperature: 0.7
