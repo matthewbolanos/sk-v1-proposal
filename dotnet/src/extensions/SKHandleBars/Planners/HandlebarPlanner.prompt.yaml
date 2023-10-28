@@ -1,97 +1,93 @@
-name: HandlebarPlanner
+name: HandlebarsPlanner
 template: |
+  {{#if lastError}}
+  {{#message role="user"}}Can you help me write a Handlebars template that achieves the following goal?{{/message}}
+  {{#message role="user"}}{{goal}}{{/message}}
+  {{#message role="assistant"}}```
+  {{lastPlan}}
+  ```{{/message}}
+  {{#message role="user"}}This plan doesn't work, I get this error: "{{lastError}}"{{/message}}
+  {{#message role="assistant"}}I'm sorry, let me try to fix it.{{/message}}
+  {{#message role="system"}}## Instructions
+  A previous agent tried to create a Handlebars template, but it was invalid.{{/message}}
+  {{#message role="system"}}You must completely rewrite the template so that it no longer has an error by fixing the syntax or by using the correct methods{{/message}}
+  {{else}}
+  {{#message role="user"}}Can you help me write a Handlebars template that achieves the following goal?{{/message}}
+  {{#message role="user"}}{{goal}}{{/message}}
+  {{#message role="system"}}## Instructions
+  Create a Handlebars template that describes the steps necessary to accomplish the user's goal in a numbered list.
+  {{/message}}
+  {{/if}}
+  
+  {{#message role="system"}}## Tips and tricks
+  - Use the `{{{{raw}}}}{{set name='var' value=var}}{{{{/raw}}}}` helper to save the results of a helper so that you can use it later in the template without wasting resources calling the same helper multiple times.
+  - There are no initial variables available to you. You must create them yourself using the {{{{raw}}}}`{{set}}`{{{{/raw}}}} helper.
+  - Do not chain helpers since you have a tendency to create syntax errors when you do; use the {{{{raw}}}}`{{set}}`{{{{raw}}}} helper instead. For example, don't do this: {{{{raw}}}}`{{Helper_Function input=(array 1 2 3)}}` but instead create the variable and _then_ use it: `{{set name='var' value=(array 1 2 3)}}{{Helper_Function input=var}}`{{{{/raw}}}}
+  - Use hash arguments when using custom helpers; this helps ensure the template renders correctly.
+  - Be extremely careful about types. For example, if you pass an array to a helper that expects a number, the template will error out.
+  - There is no need to check your results in the template.
+
+  ## Bonus
+  If you can correctly guess the output of the helpers before providing the template, you'll get extra credit.
+  For example, if you think that the output of the `{{{{raw}}}}{{random}}{{{{/raw}}}}` helper is `42`, then provide a guess like this:
+  {{/message}}
+
   {{#message role="system"}}
-  ## Instructions
-  Create a Handlebar template that describes the steps necessary to accomplish the user's goal along with the results of each step.
-  The rendered template should look like the following:
-  ```json
-  {
-    response: <Response to the user>
-  }
+  User: "Can you generate a random number?"
+
+  Assistant: "1. Generate a random number (Guess: 42)"
+
   ```
+  {{{{raw}}}}{{set name="randomNumber" value=(random)}}
+  1. Generate a random number: {{randomNumber}}.{{{{/raw}}}}
+  ```{{/message}}
 
-  ## Rules
-  - Use the {{{{raw}}}}{{set name='var' value=input}}{{{{/raw}}}} helper to store results of a helper so that you can use it again later as necessary.
-  - Wrap your Handlebar template in ``` to escape it and prevent it from being rendered.
-  - There are no initial variables available to you. You must create them yourself using the `set` helper.
-  - Access variables directly without using a helper.
-  - Do not chain helpers since you have a tendency to create syntax errors when you do; instead, use the `set` helper to store intermediate results between helper calls. For example, don't do this: {{{{raw}}}}`{{Plugin.Function input=(json value)}}` but instead do this: `{{set name='var' value=(json value)}}{{Plugin.Function var}}`{{{{/raw}}}}
-  - Declare function parameters as hash arguments for the custom helpers; this helps ensure the template renders correctly.
-  - You must include all required inputs for each helper otherwise the template will not render correctly.
-  - Avoid explicitly setting a `response` variable.
-  - Only use helpers in the list below or the built-in block helpers in Handlebars (i.e., `#if`, `#unless`, `#each`, `#with`). Helpers not listed are not supported and will immediately fail.
+  {{#message role="system"}}## Out of the box helpers
+  - {{{{raw}}}}`{{#if}}{{/if}}`{{{{/raw}}}}
+  - {{{{raw}}}}`{{#unless}}{{/unless}}}`{{{{/raw}}}}
+  - {{{{raw}}}}`{{#each}}{{/each}}`{{{{/raw}}}}
+  - {{{{raw}}}}`{{#with}}{{/with}}`{{{{/raw}}}}
+  - {{{{raw}}}}`{{equal}}`{{{{/raw}}}}
+  - {{{{raw}}}}`{{lessThan}}`{{{{/raw}}}}
+  - {{{{raw}}}}`{{greaterThan}}`{{{{/raw}}}}
+  - {{{{raw}}}}`{{lessThanOrEqual}}`{{{{/raw}}}}
+  - {{{{raw}}}}`{{greaterThanOrEqual}}`{{{{/raw}}}}
 
-  ## Helpers
-  You have the following Handlebar helpers that you can use to accomplish the user's goal:
+  ## Custom helpers
+  You also have the following Handlebars helpers that you can use to accomplish the user's goal:
 
-  ### #set
-  - *Description*: Updates the handlebar variable with the given name to the given value. It does not print anything to the screen.
-  - *Inputs*:
-    - `name`: string - The name of the variable to set.
-    - `content`: string - The value to set the variable to.
-  - *Output*: none
+  ### set
+  Description: Updates the Handlebars variable with the given name to the given value. It does not print anything to the screen.
+  Inputs:
+    - name: string - The name of the variable to set.
+    - value: any - The value to set the variable to.
+  Output: None - This helper does not print anything to the screen.
 
   ### json
-  - *Description*: Generates a JSON string from the given value.
-  - *Inputs*:
-    - `value`: string - The value to generate JSON for.
-  - *Output*: string - The JSON string.
+  Description: Generates a JSON string from the given value.
+  Inputs:
+    - value: string - The value to generate JSON for.
+  Output: string - The JSON string.
 
   {{#each functions}}
   ### {{PluginName}}_{{Name}}
-  - *Description*: {{Description}}
-  - *Inputs*:
+  Description: {{Description}}
+  Inputs:
   {{#each Parameters}}
-    - `{{../Name}}_{{Name}}`: {{Type}} - {{Description}} {{#if IsRequired}}(required){{else}}(optional){{/if}}
+    - {{Name}}: {{Type}} - {{Description}} {{#if IsRequired}}(required){{else}}(optional){{/if}}
   {{/each}}
-  - *Output*: string - The result of the helper.
-  {{!-- Additional information that can be added later
-  {{#with OutputVariable}}
-    - *Output*: {{type}} - {{description}}
-  {{/with}}
-  - *Errors*: {{Errors}}
-  - *Examples*: 
-  {{#each Examples}}
-    - {{Example}}
-  {{/each}}
-  --}}
-  {{/each}}
-  {{/message}}
+  Output: string - The result of the helper.{{/each}}{{/message}}
 
-  {{#message role="user"}}
-  {{goal}}
-  {{/message}}
+  {{#message role="system"}}Take a deep breath and accomplish the following:
+  1. Describe the steps you'll take to accomplish the user's goal using as few words as possible
+  2. Provide the user with an efficient Handlebars template that completes the steps; don't forget to use the tips and tricks otherwise the template will not work{{/message}}
 
-  {{#message role="system"}}
-  Take a deep breath and provide the user with a Handlebar template that will accomplish their goal in the most efficient way possible.
-  Ensure that the template is valid otherwise it will not work.
-  {{/message}}
+  {{#message role="assistant"}}I'll share the template with you in a bit! In the template, you'll see that I used the helpers you provided to render the results of each step.{{/message}}
 
-  {{#message role="assistant"}}
-  Here is the Handlebar template that you requested:
-  {{/message}}
-
-  {{#if lastError}}
-  {{#message role="assistant"}}
-  ```
-  {{lastPlan}}
-  ```
-  {{/message}}
-
-  {{#message role="user"}}
-  When I try to run the handlebars template I get this error:
-  ```
-  {{lastError}}
-  ```
-  Can you create a new template that fixes this error?
-  {{/message}}
-
-  {{#message role="assistant"}}
-  I'm sorry for creating a template that causes that error, let me try to solve the goal with a different plan:
-  {{/message}}
-  {{/if}}
-
-template_format: handlebars
+  {{#message role="assistant"}}But first, I'll succinctly explain the steps I took to achieve the user's goal before sharing the actual template in a wrapped ``` code block.
+  I even provided guesses for each step to get extra credit!{{/message}}
+  
+template_format: Handlebars
 description: A function that generates a plan to accomplish a user's goal.
 input_variables:
   - name: functions
@@ -107,3 +103,4 @@ output_variable:
     description: The plan that the assistant will use to accomplish the user's goal.
 execution_settings:
   - model_id_pattern: ^gpt-3\.?5-turbo
+  - model_id_pattern: ^gpt-4

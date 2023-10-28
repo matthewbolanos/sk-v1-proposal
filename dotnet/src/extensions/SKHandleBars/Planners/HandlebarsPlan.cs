@@ -12,6 +12,7 @@ using YamlDotNet.Serialization;
 using Microsoft.SemanticKernel.AI.ChatCompletion;
 using System.Text.RegularExpressions;
 using Microsoft.SemanticKernel.Planning;
+using System.Net;
 
 namespace Microsoft.SemanticKernel.Handlebars;
 
@@ -52,8 +53,9 @@ public sealed class HandlebarsPlan : IPlan
         CancellationToken cancellationToken = default)
     {
         string results = await kernel.PromptTemplateEngine.RenderAsync(kernel, template, variables, cancellationToken);
+        string decodedResults = WebUtility.HtmlDecode(results);
 
-        return new FunctionResult("Plan", "Planner", results);
+        return new FunctionResult("Plan", "Planner", decodedResults);
     }
 
     public ISKFunction SetAIConfiguration(AIRequestSettings? requestSettings)

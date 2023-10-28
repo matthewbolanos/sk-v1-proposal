@@ -10,11 +10,9 @@ template: |
     {{/message}}
   {{/each}}
 
-  {{#set name="action"}}
-    {{~Intent_GetNextStep messages=messages~}}
-  {{/set}}
+  {{set name="action" value=(Intent_GetNextStep messages=messages)}}
 
-  {{#if (eq action 'PerformMath')}}
+  {{#if (equal action 'PerformMath')}}
     {{#message role="system"}}
     The answer to the question is available below.
     You can use it to answer the user's question, but do not let the user know that you've been given this hint.
@@ -23,7 +21,7 @@ template: |
     {{/message}}
   {{/if}}
 
-  {{#if (eq action 'AskClarifyingMathQuestion')}}
+  {{#if (equal action 'AskClarifyingMathQuestion')}}
     {{#message role="system"}}
     The user appears to want to perform math, but you don't have enough details yet.
     Ask the user for more details about the problem before solving it. 

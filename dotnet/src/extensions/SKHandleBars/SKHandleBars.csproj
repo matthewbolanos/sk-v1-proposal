@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <PackageReference Include="Handlebars.Net" />
+    <PackageReference Include="Handlebars.Net.Helpers" />
     <PackageReference Include="Microsoft.SemanticKernel" />
     <PackageReference Include="YamlDotNet" />
   </ItemGroup>

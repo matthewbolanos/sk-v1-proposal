@@ -76,12 +76,19 @@ public sealed class HandlebarsPlanner
 
         Match match = Regex.Match(result.GetValue<string>()!, @"```\s*(handlebars)?\s+(.*?)\s+```", RegexOptions.Singleline);
 
-        if (!match.Success)
+        string template;
+        if (match.Success)
         {
-            throw new Exception("Could not find the plan in the results");
+            template = match.Groups[2].Value;
         }
+        else
+        {
+            template = result.GetValue<string>()!;
+        }
+
+        template = template.Replace("#set", "set");
+        template = template.Replace("{{Guess:", "{{! Guess:");
         
-        var template = match.Groups[2].Value;
 
         return new HandlebarsPlan(Kernel, template);
     }

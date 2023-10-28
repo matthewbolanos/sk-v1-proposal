@@ -5,11 +5,16 @@ using Microsoft.SemanticKernel.TemplateEngine;
 using System.Text.Json;
 using HandlebarsDotNet.Compiler;
 using HandlebarsDotNet.IO;
+using System.ComponentModel.DataAnnotations;
+using HandlebarsDotNet.Features;
+using HandlebarsDotNet.Helpers;
+using HandlebarsDotNet.Helpers.Options;
 
 namespace Microsoft.SemanticKernel.Handlebars;
 
 public class HandlebarsPromptTemplateEngine : IPromptTemplateEngine
 {
+    const string internalVariablePrefix = "|~|";
 
     public HandlebarsPromptTemplateEngine()
     {
@@ -17,11 +22,17 @@ public class HandlebarsPromptTemplateEngine : IPromptTemplateEngine
 
     public string Render(IKernel kernel, string template, Dictionary<string,object?> variables, CancellationToken cancellationToken = default)
     {
+        
         IHandlebars handlebarsInstance = HandlebarsDotNet.Handlebars.Create(
             new HandlebarsConfiguration
             {
-                NoEscape = true
+                //NoEscape = true
             });
+
+        // HandlebarsHelpers.Register(handlebarsInstance, options =>
+        // {
+        //     new HandlebarsHelpersOptions() { UseCategoryPrefix = false };
+        // });
 
         // Add helpers for each function
         foreach (FunctionView function in ((Kernel)kernel).GetFunctionViews())
@@ -30,93 +41,19 @@ public class HandlebarsPromptTemplateEngine : IPromptTemplateEngine
         }
 
         // Add system helpers
-        handlebarsInstance.RegisterHelper("message", (writer, options, context, arguments) =>
-        {
-            var parameters = arguments[0] as IDictionary<string, object>;
+        RegisterSystemHelpers(handlebarsInstance, variables);
 
-            // Verify that the message has a role
-            if (!parameters!.ContainsKey("role"))
-            {
-                throw new Exception("Message must have a role.");
-            }
-
-            writer.Write($"<{parameters["role"]}~>", false);
-            options.Template(writer, context);
-            writer.Write($"</{parameters["role"]}~>", false);
-        });
-
-        handlebarsInstance.RegisterHelper("set", (writer, options, context, arguments) =>
-        {
-            var stringWriter = ReusableStringWriter.Get();
-            using var encodedTextWriter = new EncodedTextWriter(
-                stringWriter,
-                handlebarsInstance.Configuration.TextEncoder,
-                FormatterProvider.Current
-            );
-
-            // Render the block content into the StringWriter
-            options.Template(encodedTextWriter, context);
-
-            // The block content is now captured in the StringWriter and can be retrieved with stringWriter.ToString()
-
-            // Do something with the block content, e.g., log, save to database, etc.
-            string capturedContent = encodedTextWriter.ToString();
-
-            // Get the parameters from the template arguments
-            var parameters = arguments[0] as IDictionary<string, object>;
-
-            if (variables.ContainsKey((string)parameters!["name"]))
-            {
-                variables[(string)parameters!["name"]] = capturedContent;
-            }
-            else
-            {
-                variables.Add((string)parameters!["name"], capturedContent);
-            }
-        });
-
-        handlebarsInstance.RegisterHelper("get", (writer, context, arguments) => 
-        {
-            string parameter = arguments[0].ToString()!;
-
-            if (variables.ContainsKey(parameter))
-            {
-                writer.Write(variables[parameter]);
-            }
-        });
-
-        handlebarsInstance.RegisterHelper("json", (writer, context, arguments) => 
-        {
-            object objectToSerialize = arguments[0];
-            string json = JsonSerializer.Serialize(objectToSerialize);
-
-            writer.Write(json);
-        });
-
-        handlebarsInstance.RegisterHelper("eq", (writer, context, arguments) => 
-        {
-            object left = arguments[0];
-            object right = arguments[1];
-
-            if (left.Equals(right))
-            {
-                writer.Write("True");
-            }
-        });
-
-        handlebarsInstance.RegisterHelper("raw", (writer, options, context, arguments) => {
-            options.Template(writer, null);
-        });
 
         var compiledTemplate = handlebarsInstance.Compile(template);
         return compiledTemplate(variables);
     }
+    
 
     private void RegisterFunctionAsHelper(IKernel kernel, IHandlebars handlebarsInstance, FunctionView functionView, Dictionary<string,object?> variables, CancellationToken cancellationToken = default)
     {
         string fullyResolvedFunctionName = functionView.PluginName + "_" + functionView.Name;
 
-        handlebarsInstance.RegisterHelper(fullyResolvedFunctionName, (writer, context, arguments) =>
+        handlebarsInstance.RegisterHelper(fullyResolvedFunctionName, (in HelperOptions options, in Context context, in Arguments arguments) =>
         {
             // Get the parameters from the template arguments
             if (arguments.Any())
@@ -188,6 +125,7 @@ public class HandlebarsPromptTemplateEngine : IPromptTemplateEngine
                 }
             }
 
+            
             ISKFunction function = kernel.Functions.GetFunction(functionView.PluginName, functionView.Name);
             FunctionResult result = function.InvokeAsync(
                 kernel,
@@ -195,8 +133,114 @@ public class HandlebarsPromptTemplateEngine : IPromptTemplateEngine
                 cancellationToken: cancellationToken
             ).GetAwaiter().GetResult();
 
-            // Write the result to the template
-            writer.Write(result);
+            return result.GetValue<object?>();
+        });
+    }
+
+    private void RegisterSystemHelpers(IHandlebars handlebarsInstance, Dictionary<string,object?> variables)
+    {
+        handlebarsInstance.RegisterHelper("array", (in HelperOptions options, in Context context, in Arguments arguments) => 
+        {
+            // convert all the arguments to an array
+            var array = arguments.Select(a => a).ToList();
+
+            return array;
+        });
+
+        handlebarsInstance.RegisterHelper("concat", (in HelperOptions options, in Context context, in Arguments arguments) => 
+        {
+            List<string?> strings = arguments.Select((var) => {
+                if (var == null)
+                {
+                    return null;
+                }
+                return var!.ToString();
+            }).ToList();
+            return String.Concat(strings);
+        });
+
+        handlebarsInstance.RegisterHelper("equal", (in HelperOptions options, in Context context, in Arguments arguments) =>
+        {
+            object? left = arguments[0];
+            object? right = arguments[1];
+
+            return left == right || (left!=null && left.Equals(right));
+        });
+
+        handlebarsInstance.RegisterHelper("lessThan", (in HelperOptions options, in Context context, in Arguments arguments) =>
+        {
+            double left = CasteToNumber(arguments[0]);
+            double right = CasteToNumber(arguments[1]);
+
+            return left < right;
+
+        });
+
+        handlebarsInstance.RegisterHelper("greaterThan", (in HelperOptions options, in Context context, in Arguments arguments) =>
+        {
+            double left = CasteToNumber(arguments[0]);
+            double right = CasteToNumber(arguments[1]);
+
+            return left > right;
+        });
+
+        handlebarsInstance.RegisterHelper("lessThanOrEqual", (in HelperOptions options, in Context context, in Arguments arguments) =>
+        {
+            double left = CasteToNumber(arguments[0]);
+            double right = CasteToNumber(arguments[1]);
+
+            return left <= right;
+        });
+
+        handlebarsInstance.RegisterHelper("greaterThanOrEqual", (in HelperOptions options, in Context context, in Arguments arguments) =>
+        {
+            double left = CasteToNumber(arguments[0]);
+            double right = CasteToNumber(arguments[1]);
+
+            return left >= right;
+        });
+
+        handlebarsInstance.RegisterHelper("json", (in HelperOptions options, in Context context, in Arguments arguments) => 
+        {
+            object objectToSerialize = arguments[0];
+            string json = JsonSerializer.Serialize(objectToSerialize);
+
+            return json;
+        });
+
+        handlebarsInstance.RegisterHelper("message", (writer, options, context, arguments) =>
+        {
+            var parameters = arguments[0] as IDictionary<string, object>;
+
+            // Verify that the message has a role
+            if (!parameters!.ContainsKey("role"))
+            {
+                throw new Exception("Message must have a role.");
+            }
+
+            writer.Write($"<{parameters["role"]}>", false);
+            options.Template(writer, context);
+            writer.Write($"</{parameters["role"]}>", false);
+        });
+
+        handlebarsInstance.RegisterHelper("raw", (writer, options, context, arguments) => {
+            options.Template(writer, null);
+        });
+
+        handlebarsInstance.RegisterHelper("set", (writer, context, arguments) => 
+        {
+            // Get the parameters from the template arguments
+            var parameters = arguments[0] as IDictionary<string, object>;
+
+            if (variables.ContainsKey((string)parameters!["name"]))
+            {
+                variables[(string)parameters!["name"]] = parameters!["value"];
+            }
+            else
+            {
+                variables.Add((string)parameters!["name"], parameters!["value"]);
+            }
+            // writer.Write("The "+parameters!["name"]+" variable has been set to "+parameters!["value"]+".");
         });
     }
 
@@ -235,6 +279,26 @@ public class HandlebarsPromptTemplateEngine : IPromptTemplateEngine
             || ushort.TryParse(input, out _)
             || uint.TryParse(input, out _)
             || ulong.TryParse(input, out _);
+    }
+
+    private static double CasteToNumber(object? number)
+    {
+        if (number is int numberInt)
+        {
+            return numberInt;
+        }
+        else if (number is double numberDouble)
+        {
+            return numberDouble;
+        }
+        else if (number is decimal numberDecimal)
+        {
+            return (double)numberDecimal;
+        }
+        else
+        {
+            throw new Exception($"Invalid parameter type for operator. Parameters must be of type int, double, or decimal.");
+        }
     }
 
     /*

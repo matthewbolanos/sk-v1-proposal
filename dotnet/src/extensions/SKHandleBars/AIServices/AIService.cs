@@ -8,6 +8,7 @@ using Microsoft.SemanticKernel.Connectors.AI.OpenAI.ChatCompletion;
 using Microsoft.SemanticKernel.Orchestration;
 using Microsoft.SemanticKernel.Services;
 
+namespace Microsoft.SemanticKernel.Handlebars;
 public abstract class AIService : IAIService
 {
     public string ModelId { get; }

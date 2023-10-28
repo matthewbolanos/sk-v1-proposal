@@ -9,6 +9,7 @@ using YamlDotNet.Serialization;
 using Microsoft.SemanticKernel.AI.ChatCompletion;
 using System.Text.RegularExpressions;
 using System.Runtime.CompilerServices;
+using System.Net;
 
 namespace Microsoft.SemanticKernel.Handlebars;
 
@@ -168,7 +169,7 @@ public sealed class SemanticFunction : ISKFunction, IDisposable
         {
 
             // Extract the chat history from the rendered prompt
-            string pattern = @"<(user~|system~|assistant~)>(.*?)<\/\1>";
+            string pattern = @"<(user|system|assistant)>(.*?)<\/\1>";
             MatchCollection matches = Regex.Matches(renderedPrompt, pattern, RegexOptions.Singleline);
 
             // Add the chat history to the chat
@@ -176,17 +177,17 @@ public sealed class SemanticFunction : ISKFunction, IDisposable
             foreach (Match match in matches.Cast<Match>())
             {
                 string role = match.Groups[1].Value;
-                string message = match.Groups[2].Value;
+                string message = WebUtility.HtmlDecode(match.Groups[2].Value);
 
                 switch(role)
                 {
-                    case "user~":
+                    case "user":
                         chatMessages.AddUserMessage(message);
                         break;
-                    case "system~":
+                    case "system":
                         chatMessages.AddSystemMessage(message);
                         break;
-                    case "assistant~":
+                    case "assistant":
                         chatMessages.AddAssistantMessage(message);
                         break;
                 }

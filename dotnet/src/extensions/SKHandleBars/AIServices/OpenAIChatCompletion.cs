@@ -4,20 +4,17 @@ using Azure;
 using Azure.AI.OpenAI;
 using Microsoft.SemanticKernel.AI;
 using Microsoft.SemanticKernel.AI.ChatCompletion;
-using Microsoft.SemanticKernel.Connectors.AI.OpenAI.ChatCompletion;
 using Microsoft.SemanticKernel.Orchestration;
 
 namespace Microsoft.SemanticKernel.Handlebars;
-
-public class AzureOpenAIChatCompletion : AIService, IChatCompletion
+public class OpenAIChatCompletion : AIService, IChatCompletion
 {
-    private readonly AzureChatCompletion azureChatCompletion;
+    private readonly Connectors.AI.OpenAI.ChatCompletion.OpenAIChatCompletion azureChatCompletion;
 
-    public AzureOpenAIChatCompletion(string modelId, string endpoint, string apiKey, string deploymentName): base(modelId)
+    public OpenAIChatCompletion(string modelId, string apiKey): base(modelId)
     {
-        this.azureChatCompletion = new AzureChatCompletion(
-            deploymentName,
-            endpoint,
+        this.azureChatCompletion = new Connectors.AI.OpenAI.ChatCompletion.OpenAIChatCompletion(
+            modelId,
             apiKey
         );
     }
