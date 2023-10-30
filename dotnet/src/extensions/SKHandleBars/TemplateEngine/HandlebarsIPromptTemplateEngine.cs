@@ -129,20 +129,22 @@ public class HandlebarsPromptTemplateEngine : IPromptTemplateEngine
                     // Prepare the input parameters for the function
                     foreach (var param in functionView.Parameters)
                     {
+                        var fullyQualifiedParamName = functionView.Name + "_" + param.Name;
                         if (param.Type == typeof(IKernel))
                         {
                             variables.Add(param.Name, kernel);
                         }
                         // Check if parameters has key
-                        else if (handlebarArgs?.ContainsKey(param.Name) == true)
+                        else if (handlebarArgs?.ContainsKey(param.Name) == true || handlebarArgs?.ContainsKey(fullyQualifiedParamName) == true)
                         {
+                            var value = handlebarArgs.TryGetValue(param.Name, out var val) ? val : handlebarArgs[fullyQualifiedParamName];
                             if (variables.ContainsKey(param.Name))
                             {
-                                variables[param.Name] = handlebarArgs[param.Name];
+                                variables[param.Name] = value;
                             }
                             else
                             {
-                                variables.Add(param.Name, handlebarArgs[param.Name]);
+                                variables.Add(param.Name, value);
                             }
                         }
                         else if (param.IsRequired == true)
