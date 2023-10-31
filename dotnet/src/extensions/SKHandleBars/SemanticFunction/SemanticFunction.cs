@@ -42,7 +42,6 @@ public sealed class SemanticFunction : ISKFunction, IDisposable
 
         var skFunction = deserializer.Deserialize<SemanticFunctionModel>(yamlContent);
 
-
         List<ParameterView> inputParameters = new List<ParameterView>();
         foreach(var inputParameter in skFunction.InputVariables)
         {

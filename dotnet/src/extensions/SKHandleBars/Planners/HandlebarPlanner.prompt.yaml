@@ -11,11 +11,11 @@ template: |
   ```
 
   ## Rules
-  - Use the {{{{raw}}}}{{set name='var' value=input}}{{{{/raw}}}} helper to store results of a helper so that you can use it again later as necessary.
+  - Use the {{{{raw}}}}{{#set name='var'}}input{{/set}}{{{{/raw}}}} helper to store results of a helper so that you can use it again later as necessary.
   - Wrap your Handlebar template in ``` to escape it and prevent it from being rendered.
   - There are no initial variables available to you. You must create them yourself using the `set` helper.
   - Access variables directly without using a helper.
-  - Do not chain helpers since you have a tendency to create syntax errors when you do; instead, use the `set` helper to store intermediate results between helper calls. For example, don't do this: {{{{raw}}}}`{{Plugin.Function input=(json value)}}` but instead do this: `{{set name='var' value=(json value)}}{{Plugin.Function var}}`{{{{/raw}}}}
+  - Do not chain helpers since you have a tendency to create syntax errors when you do; instead, use the `set` helper to store intermediate results between helper calls. For example, don't do this: {{{{raw}}}}`{{Plugin.Function input=(json value)}}` but instead do this: `{{#set name='var'}}{{json value}}{{/set}}{{Plugin.Function var}}`{{{{/raw}}}}
   - Declare function parameters as hash arguments for the custom helpers; this helps ensure the template renders correctly.
   - You must include all required inputs for each helper otherwise the template will not render correctly.
   - Avoid explicitly setting a `response` variable.

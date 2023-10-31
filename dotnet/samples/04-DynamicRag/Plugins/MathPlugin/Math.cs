@@ -96,6 +96,7 @@ public class Math
         inputs: "{\"number1\":5, \"number2\":2}",
         output:"10"
     )]
+
     public static double Multiply(
         [Description("The first number to multiply")] double number1,
         [Description("The second number to multiply")] double number2
@@ -141,6 +142,7 @@ public class Math
         inputs: "{\"number\":-10}",
         output:"5"
     )]
+    
     public static double Abs(
         [Description("The number")] double number
     )

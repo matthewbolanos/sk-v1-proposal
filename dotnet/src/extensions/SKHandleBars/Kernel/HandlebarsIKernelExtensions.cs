@@ -4,8 +4,6 @@
 #pragma warning disable IDE0130
 // ReSharper disable once CheckNamespace - Using the namespace of IKernel
 
-using Microsoft.SemanticKernel.Orchestration;
-
 namespace Microsoft.SemanticKernel.Handlebars;
 
 public static class HandlebarsIKernelExtensions
