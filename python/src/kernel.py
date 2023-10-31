@@ -1,17 +1,27 @@
 from typing import Any
-from .sk_function import SKFunction
+
 from semantic_kernel import Kernel
 from semantic_kernel.connectors.ai import (
     ChatCompletionClientBase,
-    TextCompletionClientBase,
     EmbeddingGeneratorBase,
+    TextCompletionClientBase,
 )
+
+from .sk_function import SKFunction
 
 
 class newKernel(Kernel):
     plugins: list[SKFunction] = []
+    prompt_template_engine: Any = None
 
-    def __init__(self, ai_services: list, plugins: list | None = None, *args, **kwargs):
+    def __init__(
+        self,
+        ai_services: list,
+        plugins: list | None = None,
+        prompt_template_engine: Any = None,
+        *args,
+        **kwargs,
+    ):
         super().__init__(*args, **kwargs)
         for service in ai_services:
             if isinstance(service, ChatCompletionClientBase):
@@ -21,6 +31,7 @@ class newKernel(Kernel):
             if isinstance(service, EmbeddingGeneratorBase):
                 self.add_text_embedding_generation_service(service.name, service)
         self.plugins = plugins
+        self.prompt_template_engine = prompt_template_engine
 
     async def run_async(
         self,
@@ -44,12 +55,12 @@ class newKernel(Kernel):
             functions = [functions]
         for function in functions:
             if isinstance(function, SKFunction):
-                results.append(await function.run_async(
-                    variables, service=service, **kwargs
-                ))
+                results.append(
+                    await function.run_async(variables, service=service, **kwargs)
+                )
             else:
                 raise TypeError(
                     f"Expected a SKFunction, but got {type(function)} instead"
                 )
-        #TODO: apply post-hooks
+        # TODO: apply post-hooks
         return results if len(results) > 1 else results[0]

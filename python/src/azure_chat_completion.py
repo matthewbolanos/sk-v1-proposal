@@ -1,45 +1,13 @@
 from typing import Any, Final
+
 import openai
-from semantic_kernel.sk_pydantic import SKBaseModel
-from semantic_kernel.connectors.ai.open_ai.models.chat.open_ai_chat_message import (
-    OpenAIChatMessage,
-)
-from semantic_kernel.skill_definition.parameter_view import ParameterView as Parameter
-from semantic_kernel.connectors.ai.open_ai.models.chat.function_call import FunctionCall
 from semantic_kernel.connectors.ai import ChatCompletionClientBase
+from semantic_kernel.sk_pydantic import SKBaseModel
+from semantic_kernel.skill_definition.parameter_view import ParameterView as Parameter
+
+from .openai_chat_history import OpenAIChatHistory
 
 RESPONSE_OBJECT_KEY: Final = "response_object"
-
-class OpenAIChatHistory(SKBaseModel):
-    messages: list[OpenAIChatMessage] = []
-
-    def add_user_message(self, message: str):
-        self.messages.append(OpenAIChatMessage(role="user", fixed_content=message))
-
-    def add_assistant_message(
-        self, message: str | None = None, function_call: FunctionCall | None = None
-    ):
-        self.messages.append(OpenAIChatMessage(role="assistant", fixed_content=message))
-
-    def add_system_message(self, message: str):
-        self.messages.append(OpenAIChatMessage(role="system", fixed_content=message))
-
-    def add_function_call_response(self, function_name: str, result: str):
-        self.messages.append(
-            OpenAIChatMessage(
-                role="function_call", fixed_content=result, name=function_name
-            )
-        )
-    
-    def add_openai_response(self, response: Any):
-        if 'choices' in response:
-            message = response.choices[0].message
-            self.messages.append(OpenAIChatMessage(**message))
-        else:
-            self.messages.append(OpenAIChatMessage(**response))
-
-    def __iter__(self) -> iter:
-        return self.messages.__iter__()
 
 
 class AzureChatCompletion(SKBaseModel, ChatCompletionClientBase):
@@ -54,36 +22,46 @@ class AzureChatCompletion(SKBaseModel, ChatCompletionClientBase):
 
     async def complete_chat_async(
         self,
-        chat_history: OpenAIChatHistory,
+        rendered_template: str,
         request_settings: dict,
         output_variables: list[Parameter] = None,
+        **kwargs,
     ) -> dict:
+        chat_history = OpenAIChatHistory.from_prompt(rendered_template)
         response = await self._send_chat_request(
-            chat_history, request_settings, None
+            chat_history, request_settings, functions=None, **kwargs
         )
-        if request_settings.get('stream', False):
+        if request_settings.get("stream", False):
             return {RESPONSE_OBJECT_KEY: response}
-        result_key = output_variables[0].name if output_variables else 'result'
-        res = {result_key: response.choices[0].message.content, RESPONSE_OBJECT_KEY: response}
+        result_key = output_variables[0].name if output_variables else "result"
+        res = {
+            result_key: response.choices[0].message.content,
+            RESPONSE_OBJECT_KEY: response,
+        }
         return res
 
     async def complete_chat_stream_async(
         self,
-        chat_history: OpenAIChatHistory,
+        rendered_template: str,
         request_settings: dict,
         output_variables: list[Parameter] = None,
+        **kwargs,
     ) -> dict:
-        return await self.complete_chat_async(chat_history, request_settings, output_variables)
-    
+        return await self.complete_chat_async(
+            rendered_template, request_settings, output_variables, **kwargs
+        )
+
     async def complete_chat_with_functions_async(
         self,
-        chat_history: OpenAIChatHistory,
+        rendered_template: str,
         functions: list[dict],
         request_settings: dict,
+        **kwargs,
     ) -> dict:
-        request_settings['stream'] = False
+        chat_history = OpenAIChatHistory.from_prompt(rendered_template)
+        request_settings["stream"] = False
         response = await self._send_chat_request(
-            chat_history, request_settings, functions
+            chat_history, request_settings, functions, **kwargs
         )
         return {"result": response.choices[0].message, RESPONSE_OBJECT_KEY: response}
 
@@ -92,6 +70,7 @@ class AzureChatCompletion(SKBaseModel, ChatCompletionClientBase):
         chat_history: OpenAIChatHistory,
         request_settings: dict,
         functions: list[dict] = None,
+        **kwargs,
     ):
         messages = [message.as_dict() for message in chat_history]
 
@@ -114,6 +93,9 @@ class AzureChatCompletion(SKBaseModel, ChatCompletionClientBase):
         if functions and request_settings.get("function_call") is not None:
             model_args["function_call"] = request_settings["function_call"]
             model_args["functions"] = functions
+
+        if kwargs:
+            model_args.update(kwargs)
 
         response: Any = await openai.ChatCompletion.acreate(**model_args)
         return response

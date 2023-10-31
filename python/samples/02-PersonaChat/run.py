@@ -1,13 +1,14 @@
+import asyncio
 import os
 import sys
-import asyncio
 
 from semantic_kernel.utils.settings import azure_openai_settings_from_dot_env_as_dict
+
 # to allow the strange structure and the import of the new pieces
 sys.path.append(os.getcwd())
+from python.src.azure_chat_completion import RESPONSE_OBJECT_KEY, AzureChatCompletion
 from python.src.kernel import newKernel as Kernel
 from python.src.sk_function import SKFunction
-from python.src.azure_chat_completion import AzureChatCompletion, RESPONSE_OBJECT_KEY
 
 
 async def runner():
@@ -17,7 +18,7 @@ async def runner():
     )
     chat_function = SKFunction.from_yaml(
         os.getcwd()
-        + "/python/samples/01-SimpleChat/plugins/ChatPlugin/SimpleChat.prompt.yaml"
+        + "/python/samples/02-PersonaChat/plugins/ChatPlugin/PersonaChat.prompt.yaml"
     )
 
     # create kernel
@@ -25,9 +26,7 @@ async def runner():
 
     # create chat_history
     chat_history = gpt35turbo.create_new_chat()
-    chat_history.add_system_message("Hello! I am a robot.")
-    chat_history.add_user_message("Hello! I am a human.")
-    
+
     # loop with input
     while True:
         user_input = input("User:> ")
@@ -38,8 +37,11 @@ async def runner():
         # get response
         response = await kernel.run_async(
             chat_function,
-            variables={"messages": chat_history},
-            service=gpt35turbo
+            variables={
+                "persona": "You are a snarky (yet helpful) teenage assistant. Make sure to use hip slang in every response.",
+                "messages": chat_history,
+            },
+            service=gpt35turbo,
         )
 
         # print response

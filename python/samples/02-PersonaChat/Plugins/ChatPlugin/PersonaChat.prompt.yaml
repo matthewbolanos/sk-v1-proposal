@@ -5,8 +5,8 @@ template: |
   {{/message}}
 
   {{#each messages}}
-    {{#message role=Role}}
-      {{~Content~}}
+    {{#message role=role}}
+      {{~content~}}
     {{/message}}
   {{/each}}
 template_format: handlebars
