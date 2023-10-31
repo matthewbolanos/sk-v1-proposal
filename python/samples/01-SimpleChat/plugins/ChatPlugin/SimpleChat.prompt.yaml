@@ -17,8 +17,8 @@ input_variables:
     description: The history of the chat.
     is_required: true
 output_variables:
-  - name: assistant_response
-    type: string
+    name: assistant_response
+    type: str
     description: The response from the assistant.
 execution_settings:
   - model_id_pattern: ^gpt-4

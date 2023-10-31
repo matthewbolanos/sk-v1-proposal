@@ -1,7 +1,7 @@
 from typing import Any, Union, Callable
 from jinja2 import Template
 import yaml
-from semantic_kernel.skill_definition.parameter_view import ParameterView
+from semantic_kernel.skill_definition.parameter_view import ParameterView as Parameter
 from semantic_kernel.sk_pydantic import SKBaseModel
 from pybars import Compiler
 import re
@@ -55,8 +55,8 @@ class SKFunction(SKBaseModel):
     template: Union[str, Template, Callable]
     template_format: str
     description: str
-    input_variables: list[ParameterView]
-    output_variables: list[ParameterView]
+    input_variables: list[Parameter]
+    output_variables: list[Parameter]
     execution_settings: dict
 
     @classmethod
@@ -66,15 +66,12 @@ class SKFunction(SKBaseModel):
         # create the function
         with open(path) as file:
             yaml_data = yaml.load(file, Loader=yaml.FullLoader)
+        
         # parse the yaml
-
         template = parse_template(yaml_data["template"], yaml_data["template_format"])
-        # if yaml_data["template_format"] == "handlebars":
-        #     template = Template(yaml_data["template"])
-        print(f"{template=}")
 
         input_variables = [
-            ParameterView(
+            Parameter(
                 name=variables.get("name"),
                 description=variables.get("description"),
                 default_value="",
@@ -83,23 +80,24 @@ class SKFunction(SKBaseModel):
             )
             for variables in yaml_data["input_variables"]
         ]
+        # parse output variables, just list for common interface with native functions.
         output_variables = [
-            ParameterView(
-                name=variables.get("name"),
-                description=variables.get("description"),
+            Parameter(
+                name=yaml_data["output_variables"].get("name"),
+                description=yaml_data["output_variables"].get("description"),
                 default_value="",
-                type=variables.get("type"),
-                required=variables.get("is_required", False),
+                type=yaml_data["output_variables"].get("type"),
+                required=yaml_data["output_variables"].get("is_required", False),
             )
-            for variables in yaml_data["output_variables"]
         ]
-        exec_settings = yaml_data["execution_settings"]
+        # parse execution settings
         settings = {}
-        for settings_dict in exec_settings:
+        for settings_dict in yaml_data["execution_settings"]:
             if 'model_id_pattern' in settings_dict:
                 model_pattern = re.compile(settings_dict['model_id_pattern'])
                 del settings_dict['model_id_pattern']
                 settings.update({model_pattern: settings_dict})
+
         return SKFunction(
             name=yaml_data["name"],
             template=template,
@@ -114,6 +112,10 @@ class SKFunction(SKBaseModel):
         if self.template_format == "handlebars":
             return self.template(input_vars, helpers=get_helpers())
 
+    @property
+    def output_variable_name(self) -> str:
+        return self.output_variables[0].name
+
     def settings_for_model(self, model_name: str) -> dict:
         for model_id in self.execution_settings.keys():
             if model_id.match(model_name):
@@ -125,5 +127,6 @@ class SKFunction(SKBaseModel):
         return await service.complete_chat_async(
             chat_history,
             self.settings_for_model(service.name),
+            self.output_variables,
             **kwargs
         )

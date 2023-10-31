@@ -7,7 +7,8 @@ from semantic_kernel.utils.settings import azure_openai_settings_from_dot_env_as
 sys.path.append(os.getcwd())
 from python.src.kernel import newKernel as Kernel
 from python.src.sk_function import SKFunction
-from python.src.azure_chat_completion import AzureChatCompletion
+from python.src.azure_chat_completion import AzureChatCompletion, RESPONSE_OBJECT_KEY
+
 
 async def runner():
     # create services and chat
@@ -26,6 +27,7 @@ async def runner():
     chat_history = gpt35turbo.create_new_chat()
     chat_history.add_system_message("Hello! I am a robot.")
     chat_history.add_user_message("Hello! I am a human.")
+    
     # loop with input
     while True:
         user_input = input("User:> ")
@@ -41,11 +43,13 @@ async def runner():
         )
 
         # print response
-        print(f"Assistant:> {response['result']}")
-        chat_history.add_openai_response(response['response_object'])
+        print(f"Assistant:> {response[chat_function.output_variable_name]}")
+        chat_history.add_openai_response(response[RESPONSE_OBJECT_KEY])
+
 
 def __main__():
     asyncio.run(runner())
+
 
 if __name__ == "__main__":
     __main__()

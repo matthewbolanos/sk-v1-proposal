@@ -1,11 +1,14 @@
-from typing import Any
+from typing import Any, Final
 import openai
 from semantic_kernel.sk_pydantic import SKBaseModel
 from semantic_kernel.connectors.ai.open_ai.models.chat.open_ai_chat_message import (
     OpenAIChatMessage,
 )
+from semantic_kernel.skill_definition.parameter_view import ParameterView as Parameter
 from semantic_kernel.connectors.ai.open_ai.models.chat.function_call import FunctionCall
 from semantic_kernel.connectors.ai import ChatCompletionClientBase
+
+RESPONSE_OBJECT_KEY: Final = "response_object"
 
 class OpenAIChatHistory(SKBaseModel):
     messages: list[OpenAIChatMessage] = []
@@ -53,12 +56,15 @@ class AzureChatCompletion(SKBaseModel, ChatCompletionClientBase):
         self,
         chat_history: OpenAIChatHistory,
         request_settings: dict,
+        output_variables: list[Parameter] = None,
     ) -> dict:
         request_settings['stream'] = False
         response = await self._send_chat_request(
             chat_history, request_settings, None
         )
-        return {"result": response.choices[0].message.content, "response_object": response}
+        result_key = output_variables[0].name if output_variables else 'result'
+        res = {result_key: response.choices[0].message.content, RESPONSE_OBJECT_KEY: response}
+        return res
 
     async def complete_chat_stream_async(
         self,
@@ -69,7 +75,7 @@ class AzureChatCompletion(SKBaseModel, ChatCompletionClientBase):
         response = await self._send_chat_request(
             chat_history, request_settings, None
         )
-        return {"response_object": response}
+        return {RESPONSE_OBJECT_KEY: response}
     
     async def complete_chat_with_functions_async(
         self,
@@ -81,7 +87,7 @@ class AzureChatCompletion(SKBaseModel, ChatCompletionClientBase):
         response = await self._send_chat_request(
             chat_history, request_settings, functions
         )
-        return {"result": response.choices[0].message, "response_object": response}
+        return {"result": response.choices[0].message, RESPONSE_OBJECT_KEY: response}
 
     async def _send_chat_request(
         self,
