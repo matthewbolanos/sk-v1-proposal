@@ -15,18 +15,21 @@ class newKernel(Kernel):
         super().__init__(*args, **kwargs)
         for service in ai_services:
             if isinstance(service, ChatCompletionClientBase):
-                self.add_chat_service(service._model_id, service)
+                self.add_chat_service(service.name, service)
             if isinstance(service, TextCompletionClientBase):
-                self.add_text_completion_service(service._model_id, service)
+                self.add_text_completion_service(service.name, service)
             if isinstance(service, EmbeddingGeneratorBase):
-                self.add_text_embedding_generation_service(service._model_id, service)
+                self.add_text_embedding_generation_service(service.name, service)
         self.plugins = plugins
 
     async def run_async(
         self,
         functions: list[SKFunction] | SKFunction,
         variables: dict[str, Any] | None = None,
-        service: ChatCompletionClientBase | TextCompletionClientBase | EmbeddingGeneratorBase | None = None,
+        service: ChatCompletionClientBase
+        | TextCompletionClientBase
+        | EmbeddingGeneratorBase
+        | None = None,
         **kwargs: dict,
     ) -> dict:
         """
@@ -36,14 +39,17 @@ class newKernel(Kernel):
         :param kwargs: The arguments to pass to the functions.
         :return: A dictionary of the results.
         """
-        results = {}
+        results = []
         if not isinstance(functions, list):
             functions = [functions]
         for function in functions:
             if isinstance(function, SKFunction):
-                results[function.name] = await function.run_async(variables, service=service, **kwargs)
+                results.append(await function.run_async(
+                    variables, service=service, **kwargs
+                ))
             else:
                 raise TypeError(
                     f"Expected a SKFunction, but got {type(function)} instead"
                 )
-        return results
+        #TODO: apply post-hooks
+        return results if len(results) > 1 else results[0]

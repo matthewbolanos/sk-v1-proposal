@@ -3,3 +3,4 @@ pyyaml
 pydantic
 jinja2
 pybars3
+ruff

@@ -6,6 +6,7 @@
     "configurations": [
         {
             "name": "Python: Current File",
+            "cwd": "${workspaceFolder}",
             "type": "python",
             "request": "launch",
             "program": "${file}",

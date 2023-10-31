@@ -1,10 +1,11 @@
-from semantic_kernel.connectors.ai.open_ai import AzureChatCompletion
+from typing import Any
+import openai
 from semantic_kernel.sk_pydantic import SKBaseModel
 from semantic_kernel.connectors.ai.open_ai.models.chat.open_ai_chat_message import (
     OpenAIChatMessage,
 )
 from semantic_kernel.connectors.ai.open_ai.models.chat.function_call import FunctionCall
-
+from semantic_kernel.connectors.ai import ChatCompletionClientBase
 
 class OpenAIChatHistory(SKBaseModel):
     messages: list[OpenAIChatMessage] = []
@@ -22,19 +23,98 @@ class OpenAIChatHistory(SKBaseModel):
 
     def add_function_call_response(self, function_name: str, result: str):
         self.messages.append(
-            OpenAIChatMessage(role="function_call", fixed_content=result, name=function_name)
+            OpenAIChatMessage(
+                role="function_call", fixed_content=result, name=function_name
+            )
         )
+    
+    def add_openai_response(self, response: Any):
+        if 'choices' in response:
+            message = response.choices[0].message
+            self.messages.append(OpenAIChatMessage(**message))
+        else:
+            self.messages.append(OpenAIChatMessage(**response))
 
     def __iter__(self) -> iter:
         return self.messages.__iter__()
 
 
-class NewAzureChatCompletion(AzureChatCompletion):
+class AzureChatCompletion(SKBaseModel, ChatCompletionClientBase):
+    deployment_name: str
+    api_key: str
+    endpoint: str
+    api_version: str
+    api_type: str = "azure"
 
     def create_new_chat(self):
         return OpenAIChatHistory()
 
+    async def complete_chat_async(
+        self,
+        chat_history: OpenAIChatHistory,
+        request_settings: dict,
+    ) -> dict:
+        request_settings['stream'] = False
+        response = await self._send_chat_request(
+            chat_history, request_settings, None
+        )
+        return {"result": response.choices[0].message.content, "response_object": response}
+
+    async def complete_chat_stream_async(
+        self,
+        chat_history: OpenAIChatHistory,
+        request_settings: dict,
+    ) -> dict:
+        request_settings['stream'] = True
+        response = await self._send_chat_request(
+            chat_history, request_settings, None
+        )
+        return {"response_object": response}
+    
+    async def complete_chat_with_functions_async(
+        self,
+        chat_history: OpenAIChatHistory,
+        functions: list[dict],
+        request_settings: dict,
+    ) -> dict:
+        request_settings['stream'] = False
+        response = await self._send_chat_request(
+            chat_history, request_settings, functions
+        )
+        return {"result": response.choices[0].message, "response_object": response}
+
+    async def _send_chat_request(
+        self,
+        chat_history: OpenAIChatHistory,
+        request_settings: dict,
+        functions: list[dict] = None,
+    ):
+        messages = [message.as_dict() for message in chat_history]
+
+        model_args = {
+            "api_key": self.api_key,
+            "api_type": self.api_type,
+            "api_base": self.endpoint,
+            "api_version": self.api_version,
+            "engine": self.deployment_name,
+            "messages": messages,
+            "temperature": request_settings.get("temperature", 0.0),
+            "top_p": request_settings.get("top_p", 1.0),
+            "n": request_settings.get("number_of_responses", 1),
+            "stream": request_settings.get("stream", False),
+            "max_tokens": request_settings.get("max_tokens", 256),
+            "presence_penalty": request_settings.get("presence_penalty", 0.0),
+            "frequency_penalty": request_settings.get("frequency_penalty", 0.0),
+        }
+
+        if functions and request_settings.get("function_call") is not None:
+            model_args["function_call"] = request_settings["function_call"]
+            model_args["functions"] = functions
+
+        response: Any = await openai.ChatCompletion.acreate(**model_args)
+        return response
+
     @property
     def name(self):
         # TODO: replace with name that can be initiated and matched to yaml model names
-        return self._model_id
+        return self.deployment_name

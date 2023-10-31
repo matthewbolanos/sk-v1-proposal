@@ -1,0 +1,10 @@
+{
+    "editor.formatOnType": true,
+    "editor.formatOnSave": true,
+    "editor.formatOnPaste": true,
+    "editor.defaultFormatter": "charliermarsh.ruff",
+    "python.formatting.provider": "charliermarsh.ruff",
+    "python.formatting.autopep8Args": [
+        "--max-line-length=160"
+    ]
+}

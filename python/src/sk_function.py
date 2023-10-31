@@ -1,14 +1,15 @@
 from typing import Any, Union, Callable
 from jinja2 import Template
-from semantic_kernel import PromptTemplate, PromptTemplateConfig, SemanticFunctionConfig
 import yaml
 from semantic_kernel.skill_definition.parameter_view import ParameterView
 from semantic_kernel.sk_pydantic import SKBaseModel
-from semantic_kernel.template_engine.prompt_template_engine import PromptTemplateEngine
 from pybars import Compiler
+import re
+
 
 def parse_jinja2(template):
     return Template(template)
+
 
 def parse_handlebars(template):
     compiler = Compiler()
@@ -16,11 +17,10 @@ def parse_handlebars(template):
     template = compiler.compile(template)
     return template
 
+
 def get_helpers():
-    return {
-        "message": _message,
-        "each": _each
-    }
+    return {"message": _message, "each": _each}
+
 
 def parse_template(template, template_format):
     if template_format == "handlebars":
@@ -29,16 +29,18 @@ def parse_template(template, template_format):
         return parse_jinja2(template)
     return template
 
+
 def _message(this, options, **kwargs):
-    if 'role' in kwargs:
-        return kwargs['role']
-    if 'content' in kwargs:
-        return kwargs['content']
-    if 'function_call' in kwargs:
-        return kwargs['function_call']
-    if 'name' in kwargs:
-        return kwargs['name']
+    if "role" in kwargs:
+        return kwargs["role"]
+    if "content" in kwargs:
+        return kwargs["content"]
+    if "function_call" in kwargs:
+        return kwargs["function_call"]
+    if "name" in kwargs:
+        return kwargs["name"]
     return ""
+
 
 def _each(this, options, messages):
     return [f"{options['fn'](message)}" for message in messages.messages]
@@ -47,6 +49,7 @@ def _each(this, options, messages):
     #     result.extend(options['fn'](message))
     # return result
 
+
 class SKFunction(SKBaseModel):
     name: str
     template: Union[str, Template, Callable]
@@ -54,7 +57,7 @@ class SKFunction(SKBaseModel):
     description: str
     input_variables: list[ParameterView]
     output_variables: list[ParameterView]
-    models: dict
+    execution_settings: dict
 
     @classmethod
     def from_yaml(cls, path) -> "SKFunction":
@@ -90,7 +93,13 @@ class SKFunction(SKBaseModel):
             )
             for variables in yaml_data["output_variables"]
         ]
-
+        exec_settings = yaml_data["execution_settings"]
+        settings = {}
+        for settings_dict in exec_settings:
+            if 'model_id_pattern' in settings_dict:
+                model_pattern = re.compile(settings_dict['model_id_pattern'])
+                del settings_dict['model_id_pattern']
+                settings.update({model_pattern: settings_dict})
         return SKFunction(
             name=yaml_data["name"],
             template=template,
@@ -98,33 +107,23 @@ class SKFunction(SKBaseModel):
             description=yaml_data["description"],
             input_variables=input_variables,
             output_variables=output_variables,
-            models=yaml_data["models"],
-        )
-
-    @property
-    def config(self) -> SemanticFunctionConfig:
-        template_config = PromptTemplateConfig.from_completion_parameters(
-            temperature=(
-                self.models["gpt-4"].get("temperature", None)
-                or self.models["gpt-3.5-turbo"].get("temperature", None)
-                or self.models["default"].get("temperature", None)
-                or 0.0
-            ),
-            max_tokens=(
-                self.models["gpt-4"].get("max_tokens", None)
-                or self.models["gpt-3.5-turbo"].get("max_tokens", None)
-                or self.models["default"].get("max_tokens", None)
-                or 2000
-            ),
-        )
-
-        return SemanticFunctionConfig(
-            prompt_template_config=template_config,
-            prompt_template=PromptTemplate(
-                self.template, PromptTemplateEngine(), template_config
-            ),
+            execution_settings=settings,
         )
 
     def render(self, input_vars: dict[str, Any]) -> str:
-        if self.template_format == 'handlebars':
+        if self.template_format == "handlebars":
             return self.template(input_vars, helpers=get_helpers())
+
+    def settings_for_model(self, model_name: str) -> dict:
+        for model_id in self.execution_settings.keys():
+            if model_id.match(model_name):
+                return self.execution_settings[model_id]
+
+    async def run_async(self, variables, service, **kwargs) -> dict:
+        if 'messages' in variables:
+            chat_history = variables['messages']
+        return await service.complete_chat_async(
+            chat_history,
+            self.settings_for_model(service.name),
+            **kwargs
+        )

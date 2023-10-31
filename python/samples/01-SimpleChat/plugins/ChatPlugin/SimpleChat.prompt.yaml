@@ -1,10 +1,14 @@
 name: SimpleChat
 template: |
-  [
+  {{#message role="system"}}
+  You are a helpful assistant.
+  {{/message}}
+
   {{#each messages}}
-    { "role":"{{#message role=role}}", "content": "{{#message content=content}}", "function_call": "{{#message function_call=function_call}}", "name": "{{#message name=name}}" },
+    {{#message role=Role}}
+      {{~Content~}}
+    {{/message}}
   {{/each}}
-  ]
 template_format: handlebars
 description: A function that uses the chat history to respond to the user.
 input_variables:
@@ -16,10 +20,8 @@ output_variables:
   - name: assistant_response
     type: string
     description: The response from the assistant.
-models:
-  default:
-    max_tokens: 150
-  gpt4:
-    temperature: 1.0
-  gpt35turbo:
+execution_settings:
+  - model_id_pattern: ^gpt-4
     temperature: 0.7
+  - model_id_pattern: ^gpt-3\.?5-turbo
+    temperature: 0.3
