@@ -6,7 +6,7 @@ template: |
 
   {{#each messages}}
     {{#message role=Role}}
-    {{~Content~}}
+      {{~Content~}}
     {{/message}}
   {{/each}}
 template_format: handlebars

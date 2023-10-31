@@ -58,10 +58,11 @@ class AzureChatCompletion(SKBaseModel, ChatCompletionClientBase):
         request_settings: dict,
         output_variables: list[Parameter] = None,
     ) -> dict:
-        request_settings['stream'] = False
         response = await self._send_chat_request(
             chat_history, request_settings, None
         )
+        if request_settings.get('stream', False):
+            return {RESPONSE_OBJECT_KEY: response}
         result_key = output_variables[0].name if output_variables else 'result'
         res = {result_key: response.choices[0].message.content, RESPONSE_OBJECT_KEY: response}
         return res
@@ -70,12 +71,9 @@ class AzureChatCompletion(SKBaseModel, ChatCompletionClientBase):
         self,
         chat_history: OpenAIChatHistory,
         request_settings: dict,
+        output_variables: list[Parameter] = None,
     ) -> dict:
-        request_settings['stream'] = True
-        response = await self._send_chat_request(
-            chat_history, request_settings, None
-        )
-        return {RESPONSE_OBJECT_KEY: response}
+        return await self.complete_chat_async(chat_history, request_settings, output_variables)
     
     async def complete_chat_with_functions_async(
         self,

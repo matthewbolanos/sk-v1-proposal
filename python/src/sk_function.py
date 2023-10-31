@@ -83,7 +83,7 @@ class SKFunction(SKBaseModel):
         # parse output variables, just list for common interface with native functions.
         output_variables = [
             Parameter(
-                name=yaml_data["output_variables"].get("name"),
+                name=yaml_data["output_variables"].get("name", "result"),
                 description=yaml_data["output_variables"].get("description"),
                 default_value="",
                 type=yaml_data["output_variables"].get("type"),
@@ -122,6 +122,7 @@ class SKFunction(SKBaseModel):
                 return self.execution_settings[model_id]
 
     async def run_async(self, variables, service, **kwargs) -> dict:
+        # TODO: replace with rendering the template
         if 'messages' in variables:
             chat_history = variables['messages']
         return await service.complete_chat_async(
