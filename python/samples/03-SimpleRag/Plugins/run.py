@@ -9,10 +9,17 @@ sys.path.append(os.getcwd())
 from python.src.azure_chat_completion import RESPONSE_OBJECT_KEY, AzureChatCompletion
 from python.src.kernel import newKernel as Kernel
 from python.src.sk_function import SKFunction
+from python.src.sk_plugin import SKPlugin
 
 
 async def runner():
     # create services and chat
+    search_plugin = SKPlugin(
+        "search",
+        os.getcwd() + "/python/samples/03-SimpleRag/Plugins/SearchPlugin",
+        yaml=True,
+        native=True,
+    )
     gpt35turbo = AzureChatCompletion(
         **azure_openai_settings_from_dot_env_as_dict(include_api_version=True),
     )
@@ -20,9 +27,9 @@ async def runner():
         os.getcwd()
         + "/python/samples/03-SimpleRag/plugins/ChatPlugin/GroundedChat.prompt.yaml"
     )
-
+    print(search_plugin)
     # create kernel
-    kernel = Kernel(ai_services=[gpt35turbo])
+    kernel = Kernel(ai_services=[gpt35turbo], plugins=[search_plugin])
 
     # create chat_history
     chat_history = gpt35turbo.create_new_chat()
