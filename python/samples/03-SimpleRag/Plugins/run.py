@@ -15,8 +15,8 @@ from python.src.sk_plugin import SKPlugin
 async def runner():
     # create services and chat
     search_plugin = SKPlugin(
-        "search",
-        os.getcwd() + "/python/samples/03-SimpleRag/Plugins/SearchPlugin",
+        name="search",
+        folder=os.getcwd() + "/python/samples/03-SimpleRag/Plugins/SearchPlugin",
         yaml=True,
         native=True,
     )
