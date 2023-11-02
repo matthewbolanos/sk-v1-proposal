@@ -1,38 +1,55 @@
-from pathlib import Path
+from typing import Any
 
 from semantic_kernel.sk_pydantic import SKBaseModel
 
-from python.src.sk_function import SKFunction
+from .functions import NativeFunction, SKFunction
 
 
 class SKPlugin(SKBaseModel):
     name: str
-    folder: str
-    native: bool = False
-    yaml: bool = False
-    yaml_files: list = []
-    native_files: list = []
     functions: dict[str, SKFunction] = {}
 
-    def __init__(
-        self, name: str, folder: str, native: bool = False, yaml: bool = False
-    ):
-        super().__init__(name=name, folder=folder, native=native, yaml=yaml)
-        if not self.native and not self.yaml:
-            raise ValueError("Either native or yaml or both must be True")
-        # go through the folder and find all yaml files in subfolders
-        path = Path(self.folder)
-        for file in path.iterdir():
-            if file.suffix == ".yaml" and self.yaml:
-                self.yaml_files.append(file)
-            if file.suffix == ".py" and self.native:
-                self.native_files.append(file)
-        # create skfunctions from yaml files
-        for file in self.yaml_files:
-            try:
-                func = SKFunction.from_yaml(file)
-                self.functions[func.name] = func
-            except Exception as e:
-                print(f"Error while parsing yaml file {file}: {e}")
-                continue
-        # create skfunctions from python files
+    def __init__(self, name: str, functions: list["SKFunction"] | None = None):
+        if functions:
+            functions_dict = {func.name: func for func in functions}
+        else:
+            functions_dict = {}
+        super().__init__(name=name, functions=functions_dict)
+
+    @classmethod
+    def from_class(cls, name: str, class_object: Any) -> "SKPlugin":
+        # functions = []
+        # print(dir(class_object))
+        # members = [attr for attr in dir(class_object) if not attr.startswith("__")]
+        # for func_name in members:
+        #     function = getattr(class_object, func_name)
+        #     if hasattr(function, "__sk_function__") and function.__sk_function__:
+        #         functions.append(function)
+
+        functions = [
+            NativeFunction(getattr(class_object, function))
+            for function in dir(class_object)
+            if not function.startswith("__")
+            and hasattr(getattr(class_object, function), "__sk_function__")
+            and getattr(class_object, function).__sk_function__
+        ]
+        return cls(name, functions)
+
+    def add_function(self, function: SKFunction):
+        self.functions[function.name] = function
+
+    def add_function_from_class(self, class_object: Any):
+        functions = [
+            getattr(class_object, function)
+            for function in dir(class_object)
+            if not function.startswith("__")
+            and hasattr(function, "__sk_function__")
+            and function.__sk_function__
+        ]
+        self.functions.update(
+            {function.name: NativeFunction(function) for function in functions}
+        )
+
+    @property
+    def fqn_functions(self) -> dict[str, Any]:
+        return {f"{self.name}_{name}": func for name, func in self.functions.items()}

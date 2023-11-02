@@ -1,3 +1,4 @@
+import logging
 from typing import Any, Final
 
 import openai
@@ -6,6 +7,8 @@ from semantic_kernel.sk_pydantic import SKBaseModel
 from semantic_kernel.skill_definition.parameter_view import ParameterView as Parameter
 
 from .openai_chat_history import OpenAIChatHistory
+
+logger = logging.getLogger(__name__)
 
 RESPONSE_OBJECT_KEY: Final = "response_object"
 
@@ -23,14 +26,19 @@ class AzureChatCompletion(SKBaseModel, ChatCompletionClientBase):
     async def complete_chat_async(
         self,
         rendered_template: str,
+        *,
         request_settings: dict,
         output_variables: list[Parameter] = None,
+        functions: list[dict] | None = None,
         **kwargs,
     ) -> dict:
+        if "service" in kwargs:
+            del kwargs["service"]
         chat_history = OpenAIChatHistory.from_prompt(rendered_template)
         response = await self._send_chat_request(
-            chat_history, request_settings, functions=None, **kwargs
+            chat_history, request_settings, functions=functions, **kwargs
         )
+
         if request_settings.get("stream", False):
             return {RESPONSE_OBJECT_KEY: response}
         result_key = output_variables[0].name if output_variables else "result"
@@ -47,23 +55,10 @@ class AzureChatCompletion(SKBaseModel, ChatCompletionClientBase):
         output_variables: list[Parameter] = None,
         **kwargs,
     ) -> dict:
+        logger.warning('Deprecated: use "complete_chat_async" instead')
         return await self.complete_chat_async(
             rendered_template, request_settings, output_variables, **kwargs
         )
-
-    async def complete_chat_with_functions_async(
-        self,
-        rendered_template: str,
-        functions: list[dict],
-        request_settings: dict,
-        **kwargs,
-    ) -> dict:
-        chat_history = OpenAIChatHistory.from_prompt(rendered_template)
-        request_settings["stream"] = False
-        response = await self._send_chat_request(
-            chat_history, request_settings, functions, **kwargs
-        )
-        return {"result": response.choices[0].message, RESPONSE_OBJECT_KEY: response}
 
     async def _send_chat_request(
         self,

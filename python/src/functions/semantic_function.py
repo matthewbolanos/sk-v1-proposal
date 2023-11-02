@@ -1,29 +1,21 @@
 import re
-from typing import Any
 
 import yaml
-from semantic_kernel.sk_pydantic import SKBaseModel
 from semantic_kernel.skill_definition.parameter_view import ParameterView as Parameter
 
 from python.src.handlebars_prompt_template_handler import (
     HandleBarsPromptTemplateHandler,
 )
 
+from .sk_function import SKFunction
 
-class SKFunction(SKBaseModel):
-    name: str
+
+class SemanticFunction(SKFunction):
     template: HandleBarsPromptTemplateHandler | str
     template_format: str
-    description: str
-    input_variables: list[Parameter]
-    output_variables: list[Parameter]
     execution_settings: dict
 
-    @classmethod
-    def from_yaml(cls, path) -> "SKFunction":
-        # read  the file
-        # parse the yaml
-        # create the function
+    def __init__(self, *, path):
         with open(path) as file:
             yaml_data = yaml.load(file, Loader=yaml.FullLoader)
 
@@ -48,7 +40,7 @@ class SKFunction(SKBaseModel):
                 name=yaml_data["output_variable"].get("name", "result"),
                 description=yaml_data["output_variable"].get("description"),
                 default_value="",
-                type=yaml_data["output_variable"].get("type"),
+                type=yaml_data["output_variable"].get("type", "string"),
                 required=yaml_data["output_variable"].get("is_required", False),
             )
         ]
@@ -60,32 +52,36 @@ class SKFunction(SKBaseModel):
                 del settings_dict["model_id_pattern"]
                 settings.update({model_pattern: settings_dict})
 
-        return SKFunction(
+        super().__init__(
             name=yaml_data["name"],
-            template=template,
-            template_format=yaml_data["template_format"],
             description=yaml_data["description"],
             input_variables=input_variables,
             output_variables=output_variables,
+            template=template,
+            template_format=yaml_data["template_format"],
             execution_settings=settings,
         )
-
-    def render(self, variables: dict[str, Any]) -> str:
-        return self.template.render(variables)
 
     @property
     def output_variable_name(self) -> str:
         return self.output_variables[0].name
 
-    def settings_for_model(self, model_name: str) -> dict:
+    def _settings_for_model(self, model_name: str) -> dict:
         for model_id in self.execution_settings.keys():
             if model_id.match(model_name):
                 return self.execution_settings[model_id]
 
-    async def run_async(self, variables, service, **kwargs) -> dict:
-        return await service.complete_chat_async(
-            self.template.render(variables),
-            self.settings_for_model(service.name),
-            self.output_variables,
-            **kwargs,
+    async def run_async(self, variables, **kwargs) -> dict:
+        if "service" not in kwargs:
+            raise ValueError('"service" argument is required for a semantic function')
+        rendered = await self.template.render(variables, **kwargs)
+        service = kwargs.get("service")
+        result = await service.complete_chat_async(
+            rendered,
+            request_settings=self._settings_for_model(service.name),
+            output_variables=self.output_variables,
+            **kwargs.get("service_kwargs", {}),
         )
+        if kwargs.get("called_by_template", False):
+            return result[self.output_variable_name]
+        return result

@@ -2,32 +2,39 @@ import asyncio
 import os
 import sys
 
+from semantic_kernel.connectors.search_engine import BingConnector
 from semantic_kernel.utils.settings import azure_openai_settings_from_dot_env_as_dict
 
 # to allow the strange structure and the import of the new pieces
 sys.path.append(os.getcwd())
 from python.src.azure_chat_completion import RESPONSE_OBJECT_KEY, AzureChatCompletion
+from python.src.functions import SemanticFunction
 from python.src.kernel import newKernel as Kernel
-from python.src.sk_function import SKFunction
 from python.src.sk_plugin import SKPlugin
+
+sys.path.append(os.getcwd() + "/python/samples/03-SimpleRag/Plugins")
+from SearchPlugin.search import Search
 
 
 async def runner():
     # create services and chat
-    search_plugin = SKPlugin(
-        name="search",
-        folder=os.getcwd() + "/python/samples/03-SimpleRag/Plugins/SearchPlugin",
-        yaml=True,
-        native=True,
+    search_plugin = SKPlugin.from_class(
+        "Search",
+        Search(bing_connector=BingConnector(api_key=os.getenv("BING_API_KEY"))),
+    )
+    search_plugin.add_function(
+        SemanticFunction(
+            path=os.getcwd()
+            + "/python/samples/03-SimpleRag/plugins/SearchPlugin/GetSearchQuery.prompt.yaml"
+        )
     )
     gpt35turbo = AzureChatCompletion(
         **azure_openai_settings_from_dot_env_as_dict(include_api_version=True),
     )
-    chat_function = SKFunction.from_yaml(
-        os.getcwd()
+    chat_function = SemanticFunction(
+        path=os.getcwd()
         + "/python/samples/03-SimpleRag/plugins/ChatPlugin/GroundedChat.prompt.yaml"
     )
-    print(search_plugin)
     # create kernel
     kernel = Kernel(ai_services=[gpt35turbo], plugins=[search_plugin])
 

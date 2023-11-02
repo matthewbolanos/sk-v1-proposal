@@ -1,0 +1,41 @@
+# Copyright (c) Microsoft. All rights reserved.
+
+
+def sk_function_parameter(
+    *,
+    name: str,
+    direction: str = "input",  # input or output
+    description: str,
+    default_value: str = "",
+    type: str = "string",
+    required: bool = False,
+):
+    """
+    Decorator for SK function context parameters.
+
+    Args:
+        name -- The name of the context parameter
+        description -- The description of the context parameter
+        default_value -- The default value of the context parameter
+        type -- The type of the context parameter, used for function calling
+        required -- Whether the context parameter is required
+
+    """
+
+    def decorator(func):
+        if not hasattr(func, "__sk_function_context_parameters__"):
+            func.__sk_function_context_parameters__ = []
+
+        func.__sk_function_context_parameters__.append(
+            {
+                "name": name,
+                "direction": direction,  # input or output
+                "description": description,
+                "default_value": default_value,
+                "type": type,
+                "required": required,
+            }
+        )
+        return func
+
+    return decorator

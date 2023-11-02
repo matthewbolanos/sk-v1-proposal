@@ -6,8 +6,8 @@ template: |
   {{/message}}
 
   {{#each messages}}
-    {{#message role=Role}}
-    {{~Content~}}
+    {{#message role=role}}
+      {{~content~}}
     {{/message}}
   {{/each}}
 
@@ -32,6 +32,7 @@ input_variables:
     description: The history of the chat.
     is_required: true
 output_variable:
+  name: query
   type: string
   description: The Bing search to perform on behalf of the user.
 execution_settings:

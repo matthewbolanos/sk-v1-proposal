@@ -7,11 +7,14 @@ from semantic_kernel.connectors.ai import (
     TextCompletionClientBase,
 )
 
-from .sk_function import SKFunction
+from python.src.functions.semantic_function import SemanticFunction
+
+from .functions import SKFunction
+from .sk_plugin import SKPlugin
 
 
 class newKernel(Kernel):
-    plugins: list[SKFunction] = []
+    plugins: list["SKPlugin"] = []
     prompt_template_engine: Any = None
 
     def __init__(
@@ -54,13 +57,26 @@ class newKernel(Kernel):
         if not isinstance(functions, list):
             functions = [functions]
         for function in functions:
-            if isinstance(function, SKFunction):
+            if isinstance(function, SemanticFunction):
                 results.append(
-                    await function.run_async(variables, service=service, **kwargs)
+                    await function.run_async(
+                        variables,
+                        service=service,
+                        plugin_functions=self.fqn_functions,
+                        **kwargs,
+                    )
                 )
-            else:
-                raise TypeError(
-                    f"Expected a SKFunction, but got {type(function)} instead"
-                )
+                continue
+            results.append(await function.run_async(variables, **kwargs))
         # TODO: apply post-hooks
         return results if len(results) > 1 else results[0]
+
+    @property
+    def fqn_functions(self) -> dict[str, Any] | None:
+        if not self.plugins:
+            return None
+        all_fqn_functions = [plugin.fqn_functions for plugin in self.plugins]
+        all = {}
+        for funcs in all_fqn_functions:
+            all.update(funcs)
+        return all
