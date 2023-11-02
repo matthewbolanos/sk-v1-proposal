@@ -46,15 +46,10 @@ while(true)
         variables: new() {
             { "persona", "You are a snarky (yet helpful) teenage assistant. Make sure to use hip slang in every response." },
             { "messages", chatHistory }
-        },
-        streaming: true
+        }
     );
     
     Console.Write("Assistant > ");
-    await foreach(var message in result.GetStreamingValue<string>()!)
-    {
-        Console.Write(message);
-    }
-    Console.WriteLine();
-    chatHistory.AddAssistantMessage(await result.GetValueAsync<string>()!);
+    Console.WriteLine(result);
+    chatHistory.AddAssistantMessage(result.GetValue<string>()!);
 }

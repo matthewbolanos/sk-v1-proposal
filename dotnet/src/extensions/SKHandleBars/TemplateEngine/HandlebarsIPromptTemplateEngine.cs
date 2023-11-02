@@ -14,8 +14,6 @@ namespace Microsoft.SemanticKernel.Handlebars;
 
 public class HandlebarsPromptTemplateEngine : IPromptTemplateEngine
 {
-    const string internalVariablePrefix = "|~|";
-
     public HandlebarsPromptTemplateEngine()
     {
     }
@@ -23,16 +21,7 @@ public class HandlebarsPromptTemplateEngine : IPromptTemplateEngine
     public string Render(IKernel kernel, string template, Dictionary<string,object?> variables, CancellationToken cancellationToken = default)
     {
         
-        IHandlebars handlebarsInstance = HandlebarsDotNet.Handlebars.Create(
-            new HandlebarsConfiguration
-            {
-                //NoEscape = true
-            });
-
-        // HandlebarsHelpers.Register(handlebarsInstance, options =>
-        // {
-        //     new HandlebarsHelpersOptions() { UseCategoryPrefix = false };
-        // });
+        IHandlebars handlebarsInstance = HandlebarsDotNet.Handlebars.Create();
 
         // Add helpers for each function
         foreach (FunctionView function in ((Kernel)kernel).GetFunctionViews())
@@ -218,9 +207,32 @@ public class HandlebarsPromptTemplateEngine : IPromptTemplateEngine
                 throw new Exception("Message must have a role.");
             }
 
-            writer.Write($"<{parameters["role"]}>", false);
+            writer.Write($"<message role=\"{parameters["role"]}\">", false);
             options.Template(writer, context);
-            writer.Write($"</{parameters["role"]}>", false);
+            writer.Write($"</message>", false);
+        });
+
+        handlebarsInstance.RegisterHelper("functions", (writer, options, context, arguments) =>
+        {
+            writer.Write($"<functions>", false);
+            options.Template(writer, context);
+            writer.Write($"</functions>", false);
+        });
+
+        handlebarsInstance.RegisterHelper("function", (writer, context, arguments) =>
+        {
+            var parameters = arguments[0] as IDictionary<string, object>;
+
+            if (!parameters!.ContainsKey("pluginName"))
+            {
+                throw new Exception("Function must have a pluginName.");
+            }
+            if (!parameters!.ContainsKey("name"))
+            {
+                throw new Exception("Function must have a name.");
+            }
+
+            writer.Write($"<function pluginName=\"{parameters["pluginName"]}\" name=\"{parameters["name"]}\"/>", false);
         });
 
         handlebarsInstance.RegisterHelper("raw", (writer, options, context, arguments) => {
