@@ -2,7 +2,7 @@ from typing import Any
 
 from semantic_kernel.sk_pydantic import SKBaseModel
 
-from ..semantic_functions import NativeFunction, SKFunction
+from . import NativeFunction, SKFunction
 
 
 class SKPlugin(SKBaseModel):

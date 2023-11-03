@@ -1,4 +1,5 @@
 import re
+from typing import Any
 
 import yaml
 from semantic_kernel.skill_definition.parameter_view import ParameterView as Parameter
@@ -66,19 +67,33 @@ class SemanticFunction(SKFunction):
     def output_variable_name(self) -> str:
         return self.output_variables[0].name
 
-    def _settings_for_model(self, model_name: str) -> dict:
+    def _get_service_settings(self, service: Any) -> dict:
         for model_id in self.execution_settings.keys():
-            if model_id.match(model_name):
-                return self.execution_settings[model_id]
+            if model_id.match(service.name):
+                return {
+                    "request_settings": self.execution_settings[model_id],
+                    "service": service,
+                }
 
-    async def run_async(self, variables, **kwargs) -> dict:
+    def _get_service_and_settings(self, services: list) -> dict:
+        for svc in services:
+            for model_id in self.execution_settings.keys():
+                if model_id.match(svc.name):
+                    return {
+                        "request_settings": self.execution_settings[model_id],
+                        "service": svc,
+                    }
+
+    async def run_async(self, variables, services=None, **kwargs) -> dict:
         if "service" not in kwargs:
-            raise ValueError('"service" argument is required for a semantic function')
+            service_settings = self._get_service_and_settings(services)
+            kwargs["service"] = service_settings["service"]
+        else:
+            service_settings = self._get_service_settings(kwargs["service"])
         rendered = await self.template.render(variables, **kwargs)
-        service = kwargs.get("service")
-        result = await service.complete_chat_async(
+        result = await service_settings["service"].complete_chat_async(
             rendered,
-            request_settings=self._settings_for_model(service.name),
+            request_settings=service_settings["request_settings"],
             output_variables=self.output_variables,
             **kwargs.get("service_kwargs", {}),
         )

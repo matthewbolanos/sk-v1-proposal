@@ -9,12 +9,14 @@ from semantic_kernel.connectors.ai import (
 
 from python.src.plugins.semantic_function import SemanticFunction
 
-from .plugins import SKPlugin
-from .semantic_functions import SKFunction
+from .plugins import SKFunction, SKPlugin
 
 
 class newKernel(Kernel):
     plugins: list["SKPlugin"] = []
+    services: list[
+        ChatCompletionClientBase | TextCompletionClientBase | EmbeddingGeneratorBase
+    ] = []
     prompt_template_engine: Any = None
 
     def __init__(
@@ -26,24 +28,14 @@ class newKernel(Kernel):
         **kwargs,
     ):
         super().__init__(*args, **kwargs)
-        for service in ai_services:
-            if isinstance(service, ChatCompletionClientBase):
-                self.add_chat_service(service.name, service)
-            if isinstance(service, TextCompletionClientBase):
-                self.add_text_completion_service(service.name, service)
-            if isinstance(service, EmbeddingGeneratorBase):
-                self.add_text_embedding_generation_service(service.name, service)
         self.plugins = plugins
+        self.services.extend(ai_services)
         self.prompt_template_engine = prompt_template_engine
 
     async def run_async(
         self,
         functions: list[SKFunction] | SKFunction,
         variables: dict[str, Any] | None = None,
-        service: ChatCompletionClientBase
-        | TextCompletionClientBase
-        | EmbeddingGeneratorBase
-        | None = None,
         **kwargs: dict,
     ) -> dict:
         """
@@ -61,7 +53,7 @@ class newKernel(Kernel):
                 results.append(
                     await function.run_async(
                         variables,
-                        service=service,
+                        services=self.services,
                         plugin_functions=self.fqn_functions,
                         **kwargs,
                     )
