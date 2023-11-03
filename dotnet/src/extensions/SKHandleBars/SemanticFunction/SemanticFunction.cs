@@ -218,13 +218,21 @@ public sealed class SemanticFunction : ISKFunction, IDisposable
                 }
             }
             
-            OpenAIRequestSettings requestSettings = new()
+            OpenAIRequestSettings requestSettings;
+            if (functionDefinitions.Count() > 0)
             {
-                // Include all functions registered with the kernel.
-                // Alternatively, you can provide your own list of OpenAIFunctions to include.
-                Functions = functionDefinitions,
-                FunctionCall = OpenAIRequestSettings.FunctionCallAuto
-            };
+                requestSettings = new()
+                {
+                    // Include all functions registered with the kernel.
+                    // Alternatively, you can provide your own list of OpenAIFunctions to include.
+                    Functions = functionDefinitions,
+                    FunctionCall = OpenAIRequestSettings.FunctionCallAuto
+                };
+            }
+            else
+            {
+                requestSettings = new();
+            }
             
             if (streaming)
             {
