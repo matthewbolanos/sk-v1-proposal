@@ -19,7 +19,7 @@ template: |
   ### Examples 1
   {{/message}}
 
-  {{#message role="system"}}
+  {{#message role="user"}}
   Can you help me count my animals?
   {{/message}}
 
@@ -36,7 +36,7 @@ template: |
   ### Examples 2
   {{/message}}
 
-  {{#message role="system"}}
+  {{#message role="user"}}
   What is 2 plus 2?
   {{/message}}
 
@@ -53,7 +53,7 @@ template: |
   ### Examples 3
   {{/message}}
 
-  {{#message role="system"}}
+  {{#message role="user"}}
   How many eggs would I have if I had 2 and then doubled them?
   {{/message}}
 
@@ -61,7 +61,7 @@ template: |
   You would have 4 eggs.
   {{/message}}
 
-  {{#message role="system"}}
+  {{#message role="user"}}
   What if I had tripled them or quadrupled them instead?
   {{/message}}
 
@@ -77,7 +77,7 @@ template: |
   ### Examples 3
   {{/message}}
 
-  {{#message role="system"}}
+  {{#message role="user"}}
   Can you tell me a story
   {{/message}}
 
