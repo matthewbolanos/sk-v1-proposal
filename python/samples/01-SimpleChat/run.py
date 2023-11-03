@@ -11,7 +11,7 @@ from python.src.connectors import (
     AzureChatCompletion,
 )
 from python.src.kernel import newKernel as Kernel
-from python.src.semantic_functions import SemanticFunction
+from python.src.plugins import SemanticFunction
 
 
 async def runner():

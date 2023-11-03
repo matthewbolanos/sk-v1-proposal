@@ -12,8 +12,7 @@ from python.src.connectors import (
     AzureChatCompletion,
 )
 from python.src.kernel import newKernel as Kernel
-from python.src.orchestration import SKPlugin
-from python.src.semantic_functions import SemanticFunction
+from python.src.plugins import SemanticFunction, SKPlugin
 
 sys.path.append(os.getcwd() + "/python/samples/03-SimpleRag/Plugins")
 from SearchPlugin.search import Search

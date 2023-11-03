@@ -7,9 +7,9 @@ from semantic_kernel.connectors.ai import (
     TextCompletionClientBase,
 )
 
-from python.src.semantic_functions.semantic_function import SemanticFunction
+from python.src.plugins.semantic_function import SemanticFunction
 
-from .orchestration import SKPlugin
+from .plugins import SKPlugin
 from .semantic_functions import SKFunction
 
 

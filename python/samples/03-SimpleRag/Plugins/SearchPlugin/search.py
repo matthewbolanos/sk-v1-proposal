@@ -3,7 +3,7 @@ from semantic_kernel.connectors.search_engine import BingConnector
 from semantic_kernel.core_skills import WebSearchEngineSkill
 from semantic_kernel.memory.null_memory import NullMemory
 
-from python.src.semantic_functions import (
+from python.src.plugins import (
     sk_function,
     sk_function_parameter,
 )
