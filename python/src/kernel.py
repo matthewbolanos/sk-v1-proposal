@@ -7,10 +7,10 @@ from semantic_kernel.connectors.ai import (
     TextCompletionClientBase,
 )
 
-from python.src.functions.semantic_function import SemanticFunction
+from python.src.semantic_functions.semantic_function import SemanticFunction
 
-from .functions import SKFunction
-from .sk_plugin import SKPlugin
+from .orchestration import SKPlugin
+from .semantic_functions import SKFunction
 
 
 class newKernel(Kernel):

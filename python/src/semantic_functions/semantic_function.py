@@ -3,11 +3,11 @@ import re
 import yaml
 from semantic_kernel.skill_definition.parameter_view import ParameterView as Parameter
 
-from python.src.handlebars_prompt_template_handler import (
+from python.src.template_engine.handlebars_prompt_template_handler import (
     HandleBarsPromptTemplateHandler,
 )
 
-from .sk_function import SKFunction
+from ..orchestration.sk_function import SKFunction
 
 
 class SemanticFunction(SKFunction):

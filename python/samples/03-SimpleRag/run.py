@@ -7,10 +7,13 @@ from semantic_kernel.utils.settings import azure_openai_settings_from_dot_env_as
 
 # to allow the strange structure and the import of the new pieces
 sys.path.append(os.getcwd())
-from python.src.azure_chat_completion import RESPONSE_OBJECT_KEY, AzureChatCompletion
-from python.src.functions import SemanticFunction
+from python.src.connectors import (
+    RESPONSE_OBJECT_KEY,
+    AzureChatCompletion,
+)
 from python.src.kernel import newKernel as Kernel
-from python.src.sk_plugin import SKPlugin
+from python.src.orchestration import SKPlugin
+from python.src.semantic_functions import SemanticFunction
 
 sys.path.append(os.getcwd() + "/python/samples/03-SimpleRag/Plugins")
 from SearchPlugin.search import Search
