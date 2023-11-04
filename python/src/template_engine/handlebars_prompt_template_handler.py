@@ -20,6 +20,7 @@ def _message(this, options, **kwargs):
 
 
 class RunThread(threading.Thread):
+    # TODO: replace with better solution and/or figure out why asyncio.run will not work, or move to handlebars implementation that van handle async
     def __init__(self, func, fixed_kwargs, args, kwargs):
         self.func = func
         self.args = args
