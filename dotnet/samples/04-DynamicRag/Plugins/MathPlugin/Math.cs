@@ -41,32 +41,32 @@ public class Math
             lastPlan = plan;
 
 
-            Console.ForegroundColor = ConsoleColor.Blue;
-            Console.WriteLine("[Plan]");
-            Console.ForegroundColor = ConsoleColor.DarkBlue;
-            Console.WriteLine(lastPlan.ToString().Trim());
-            Console.ResetColor();
+            // Console.ForegroundColor = ConsoleColor.Blue;
+            // Console.WriteLine("[Plan]");
+            // Console.ForegroundColor = ConsoleColor.DarkBlue;
+            // Console.WriteLine(lastPlan.ToString().Trim());
+            // Console.ResetColor();
             
             // Run the plan
             try {
                 var result = await plan.InvokeAsync(kernel, new Dictionary<string, object?>());
 
-                Console.ForegroundColor = ConsoleColor.Green;
-                Console.WriteLine("[Result]");
-                Console.ForegroundColor = ConsoleColor.DarkGreen;
-                Console.WriteLine(result.ToString().Trim());
-                Console.ResetColor();
+                // Console.ForegroundColor = ConsoleColor.Green;
+                // Console.WriteLine("[Result]");
+                // Console.ForegroundColor = ConsoleColor.DarkGreen;
+                // Console.WriteLine(result.ToString().Trim());
+                // Console.ResetColor();
 
                 return result.GetValue<string>()!;
             } catch (Exception e) {
                 // If we get an error, try again
                 lastError = e;
 
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine("[Error]");
-                Console.ForegroundColor = ConsoleColor.DarkRed;
-                Console.WriteLine(e.Message.ToString().Trim());
-                Console.ResetColor();
+                // Console.ForegroundColor = ConsoleColor.Red;
+                // Console.WriteLine("[Error]");
+                // Console.ForegroundColor = ConsoleColor.DarkRed;
+                // Console.WriteLine(e.Message.ToString().Trim());
+                // Console.ResetColor();
             }
             maxTries--;
         }
@@ -125,15 +125,15 @@ public class Math
     [Description("Divides two numbers.")]
     [SKOutputDescription("The quotient of the dividend and divisor.")]
     [SKSample(
-        inputs: "{\"dividend\":10, \"divisor\":2}",
+        inputs: "{\"number1\":10, \"number2\":2}",
         output:"5"
     )]
     public static double Divide(
-        [Description("The dividend")] double dividend,
-        [Description("The divisor")] double divisor
+        [Description("The dividend")] double number1,
+        [Description("The divisor")] double number2
     )
     {
-        return dividend / divisor;
+        return number1 / number2;
     }
 
     [SKFunction]
@@ -155,42 +155,42 @@ public class Math
     [Description("Gets the absolute value of a number.")]
     [SKOutputDescription("The absolute value of the number.")]
     [SKSample(
-        inputs: "{\"number\":-10}",
+        inputs: "{\"number1\":-10}",
         output:"5"
     )]
     public static double Abs(
-        [Description("The number")] double number
+        [Description("The number")] double number1
     )
     {
-        return System.Math.Abs(number);
+        return System.Math.Abs(number1);
     }
 
     [SKFunction]
     [Description("Gets the ceiling of a single number.")]
     [SKOutputDescription("The ceiling of the number.")]
     [SKSample(
-        inputs: "{\"number\":5.1}",
+        inputs: "{\"number1\":5.1}",
         output:"6"
     )]
-    public static double Ceiling(
-        [Description("The number")] double number
+    public static double Ceil(
+        [Description("The number")] double number1
     )
     {
-        return System.Math.Ceiling(number);
+        return System.Math.Ceiling(number1);
     }
 
     [SKFunction]
     [Description("Gets the floor of a single number.")]
     [SKOutputDescription("The floor of the number.")]
     [SKSample(
-        inputs: "{\"number\":5.9}",
+        inputs: "{\"number1\":5.9}",
         output:"5"
     )]
     public static double Floor(
-        [Description("The number")] double number
+        [Description("The number")] double number1
     )
     {
-        return System.Math.Floor(number);
+        return System.Math.Floor(number1);
     }
 
     [SKFunction]
@@ -227,70 +227,70 @@ public class Math
     [Description("Gets the sign of a number.")]
     [SKOutputDescription("The sign of the number.")]
     [SKSample(
-        inputs: "{\"number\":-10}",
+        inputs: "{\"number1\":-10}",
         output:"-1"
     )]
     public static double Sign(
-        [Description("The number")] double number
+        [Description("The number")] double number1
     )
     {
-        return System.Math.Sign(number);
+        return System.Math.Sign(number1);
     }
 
     [SKFunction]
     [Description("Gets the square root of a number.")]
     [SKOutputDescription("The square root of the number.")]
     [SKSample(
-        inputs: "{\"number\":25}",
+        inputs: "{\"number1\":25}",
         output:"5"
     )]
     public static double Sqrt(
-        [Description("The number")] double number
+        [Description("The number")] double number1
     )
     {
-        return System.Math.Sqrt(number);
+        return System.Math.Sqrt(number1);
     }
 
     [SKFunction]
     [Description("Gets the sine of a number.")]
     [SKOutputDescription("The sine of the number.")]
     [SKSample(
-        inputs: "{\"number\":0}",
+        inputs: "{\"number1\":0}",
         output:"0"
     )]
     public static double Sin(
-        [Description("The number")] double number
+        [Description("The number")] double number1
     )
     {
-        return System.Math.Sin(number);
+        return System.Math.Sin(number1);
     }
 
     [SKFunction]
     [Description("Gets the cosine of a number.")]
     [SKOutputDescription("The cosine of the number.")]
     [SKSample(
-        inputs: "{\"number\":0}",
+        inputs: "{\"number1\":0}",
         output:"1"
     )]
     public static double Cos(
-        [Description("The number")] double number
+        [Description("The number")] double number1
     )
     {
-        return System.Math.Cos(number);
+        return System.Math.Cos(number1);
     }
 
     [SKFunction]
     [Description("Gets the tangent of a number.")]
     [SKOutputDescription("The tangent of the number.")]
     [SKSample(
-        inputs: "{\"number\":0}",
+        inputs: "{\"number1\":0}",
         output:"0"
     )]
     public static double Tan(
-        [Description("The number")] double number
+        [Description("The number")] double number1
     )
     {
-        return System.Math.Tan(number);
+        return System.Math.Tan(number1);
     }
 
     [SKFunction]
@@ -312,7 +312,7 @@ public class Math
     [Description("Gets the natural logarithm of a number.")]
     [SKOutputDescription("The natural logarithm of the number.")]
     [SKSample(
-        inputs: "{\"number\":10, \"baseNumber\":10}",
+        inputs: "{\"number1\":10, \"number2\":10}",
         output:"2.302585092994046"
     )]
     public static double Log(

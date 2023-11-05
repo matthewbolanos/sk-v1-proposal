@@ -29,11 +29,6 @@ public class HandlebarsPromptTemplateEngine : IPromptTemplateEngine
                 //NoEscape = true
             });
 
-        // HandlebarsHelpers.Register(handlebarsInstance, options =>
-        // {
-        //     new HandlebarsHelpersOptions() { UseCategoryPrefix = false };
-        // });
-
         // Add helpers for each function
         foreach (FunctionView function in ((Kernel)kernel).GetFunctionViews())
         {
@@ -47,7 +42,6 @@ public class HandlebarsPromptTemplateEngine : IPromptTemplateEngine
         var compiledTemplate = handlebarsInstance.Compile(template);
         return compiledTemplate(variables);
     }
-    
 
     private void RegisterFunctionAsHelper(IKernel kernel, IHandlebars handlebarsInstance, FunctionView functionView, Dictionary<string,object?> variables, CancellationToken cancellationToken = default)
     {
@@ -146,6 +140,18 @@ public class HandlebarsPromptTemplateEngine : IPromptTemplateEngine
 
             return array;
         });
+        handlebarsInstance.RegisterHelper("range", (in HelperOptions options, in Context context, in Arguments arguments) => 
+        {
+            var start = int.Parse(arguments[0].ToString());
+            var end = int.Parse(arguments[1].ToString());
+
+            var count = end-start;
+
+            // create array from start to end
+            var array = Enumerable.Range(start, count).Select(i => (object)i).ToList();
+
+            return array;
+        });
 
         handlebarsInstance.RegisterHelper("concat", (in HelperOptions options, in Context context, in Arguments arguments) => 
         {
@@ -227,6 +233,23 @@ public class HandlebarsPromptTemplateEngine : IPromptTemplateEngine
             options.Template(writer, null);
         });
 
+        handlebarsInstance.RegisterHelper("doubleOpen", (writer, context, arguments) => {
+            writer.Write("{{");
+        });
+
+        handlebarsInstance.RegisterHelper("doubleClose", (writer, context, arguments) => {
+            writer.Write("}}");
+        });
+
+        handlebarsInstance.RegisterHelper("toCamelCase", (writer, context, arguments) => {
+            var str = arguments[0].ToString()!;
+
+            if ( !string.IsNullOrEmpty(str) && char.IsUpper(str[0])) {
+                writer.Write(str.Length == 1 ? char.ToLower(str[0]).ToString() : char.ToLower(str[0]) + str[1..]);
+            }
+        });
+
+
         handlebarsInstance.RegisterHelper("set", (writer, context, arguments) => 
         {
             // Get the parameters from the template arguments
@@ -240,7 +263,20 @@ public class HandlebarsPromptTemplateEngine : IPromptTemplateEngine
             {
                 variables.Add((string)parameters!["name"], parameters!["value"]);
             }
-            // writer.Write("The "+parameters!["name"]+" variable has been set to "+parameters!["value"]+".");
+            // writer.Write(parameters!["name"]+" = "+parameters!["value"]);
+        });
+
+        handlebarsInstance.RegisterHelper("get", (in HelperOptions options, in Context context, in Arguments arguments) => 
+        {
+            if (arguments[0].GetType() == typeof(HashParameterDictionary))
+            {
+                var parameters = arguments[0] as IDictionary<string, object>;
+                return variables[(string)parameters!["name"]];
+            }
+            else
+            {
+                return variables[arguments[0].ToString()];
+            }
         });
     }
 
@@ -297,7 +333,7 @@ public class HandlebarsPromptTemplateEngine : IPromptTemplateEngine
         }
         else
         {
-            throw new Exception($"Invalid parameter type for operator. Parameters must be of type int, double, or decimal.");
+            return double.Parse(number!.ToString()!);
         }
     }
 
