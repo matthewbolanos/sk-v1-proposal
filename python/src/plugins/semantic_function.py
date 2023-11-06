@@ -67,29 +67,49 @@ class SemanticFunction(SKFunction):
     def output_variable_name(self) -> str:
         return self.output_variables[0].name
 
-    def _get_service_settings(self, service: Any) -> dict:
+    def _get_service_settings(
+        self, service: Any, request_settings: dict[str, Any] | None = None
+    ) -> dict:
         for model_id in self.execution_settings.keys():
             if model_id.match(service.name):
-                return {
+                settings = {
                     "request_settings": self.execution_settings[model_id],
                     "service": service,
                 }
+                if request_settings:
+                    settings["request_settings"].update(request_settings)
+                return settings
 
-    def _get_service_and_settings(self, services: list) -> dict:
+    def _get_service_and_settings(
+        self, services: list, request_settings: dict[str, Any] | None = None
+    ) -> dict:
         for svc in services:
             for model_id in self.execution_settings.keys():
                 if model_id.match(svc.name):
-                    return {
+                    settings = {
                         "request_settings": self.execution_settings[model_id],
                         "service": svc,
                     }
+                    if request_settings:
+                        settings["request_settings"].update(request_settings)
+                    return settings
 
-    async def run_async(self, variables, services=None, **kwargs) -> dict:
+    async def run_async(
+        self,
+        variables,
+        services=None,
+        request_settings: dict[str, any] | None = None,
+        **kwargs,
+    ) -> dict:
         if "service" not in kwargs:
-            service_settings = self._get_service_and_settings(services)
+            service_settings = self._get_service_and_settings(
+                services, request_settings
+            )
             kwargs["service"] = service_settings["service"]
         else:
-            service_settings = self._get_service_settings(kwargs["service"])
+            service_settings = self._get_service_settings(
+                kwargs["service"], request_settings
+            )
         rendered = await self.template.render(variables, **kwargs)
         result = await service_settings["service"].complete_chat_async(
             rendered,
