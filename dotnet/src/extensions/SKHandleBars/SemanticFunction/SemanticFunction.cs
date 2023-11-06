@@ -205,14 +205,14 @@ public sealed class SemanticFunction : ISKFunction, IDisposable
                 if (renderedPrompt.StartsWith("<system>## Instructions\nExplain how to achieve"))
                 {
                     requestSettings.ResultsPerPrompt = 1;
-                    requestSettings.Temperature = 0.5;
+                    requestSettings.Temperature = 0.3;
                     requestSettings.TopP = 1;
                     requestSettings.MaxTokens = 2000;
                     requestSettings.StopSequences = new List<string>() { "```\n", "``` " };
                     requestSettings.TokenSelectionBiases = new Dictionary<int, int>() {
                         // Promote
                         {28, 3}, // "="
-                        {198, 2}, // "<newline>"
+                        {198, 3}, // "<newline>"
                         {320, 2}, // " ("
                         {340, 1}, // ")<newline>"
                         {429, 2}, // "=\""
@@ -220,7 +220,7 @@ public sealed class SemanticFunction : ISKFunction, IDisposable
                         {456, 2}, // "get"
                         {751, 1}, // "set"
                         {883, 1}, // " )"
-                        {2556, 1}, // "!--"
+                        {2556, 2}, // "!--"
                         {3052, 2}, // "{{"
                         {3500, 1}, // "}}"
                         {3954, 2}, // " }}"
@@ -260,6 +260,7 @@ public sealed class SemanticFunction : ISKFunction, IDisposable
                         {611, -100}, // " /"
                         {765, -100}, // " |"
                         {6104, -100}, // " While
+                        {6499, -100}, // "<!--
                         {8858, -100}, // "example"
                         {1034, -100}, // " %"
                         {1151, -100}, // "='"

@@ -252,18 +252,36 @@ public class HandlebarsPromptTemplateEngine : IPromptTemplateEngine
 
         handlebarsInstance.RegisterHelper("set", (writer, context, arguments) => 
         {
-            // Get the parameters from the template arguments
-            var parameters = arguments[0] as IDictionary<string, object>;
-
-            if (variables.ContainsKey((string)parameters!["name"]))
+            if (arguments[0].GetType() == typeof(HashParameterDictionary))
             {
-                variables[(string)parameters!["name"]] = parameters!["value"];
+                // Get the parameters from the template arguments
+                var parameters = arguments[0] as IDictionary<string, object>;
+
+                if (variables.ContainsKey((string)parameters!["name"]))
+                {
+                    variables[(string)parameters!["name"]] = parameters!["value"];
+                }
+                else
+                {
+                    variables.Add((string)parameters!["name"], parameters!["value"]);
+                }
+                // writer.Write((string)parameters!["name"] + " = " + parameters!["value"]);
             }
             else
             {
-                variables.Add((string)parameters!["name"], parameters!["value"]);
+                var name = arguments[0].ToString();
+                var value = arguments[1];
+
+                if (variables.ContainsKey(name))
+                {
+                    variables[name] = value;
+                }
+                else
+                {
+                    variables.Add(name, value);
+                }
+                // writer.Write(name + " = " + value);
             }
-            // writer.Write(parameters!["name"]+" = "+parameters!["value"]);
         });
 
         handlebarsInstance.RegisterHelper("get", (in HelperOptions options, in Context context, in Arguments arguments) => 

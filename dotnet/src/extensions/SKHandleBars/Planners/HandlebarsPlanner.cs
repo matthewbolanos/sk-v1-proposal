@@ -95,6 +95,9 @@ public sealed class HandlebarsPlanner
             template = template.Replace($"compare.greaterThan", $"greaterThan");
             template = template.Replace($"compare.lessThanOrEqual", $"lessThanOrEqual");
             template = template.Replace($"compare.greaterThanOrEqual", $"greaterThanOrEqual");
+            template = template.Replace($"compare.greaterThanOrEqual", $"greaterThanOrEqual");
+
+            template = MinifyHandlebarsTemplate(template);
 
             // template = template.Replace("#set", "set");
             // template = template.Replace("{{Guess:", "{{! Guess:");
@@ -103,6 +106,19 @@ public sealed class HandlebarsPlanner
         }
 
         return new HandlebarsPlan(Kernel, templates);
+    }
+    static string MinifyHandlebarsTemplate(string template)
+    {
+        // This regex pattern matches '{{', then any characters including newlines (non-greedy), then '}}'
+        string pattern = @"(\{\{[\s\S]*?}})";
+
+        // Replace all occurrences of the pattern in the input template
+        return Regex.Replace(template, pattern, m =>
+        {
+            // For each match, remove the whitespace within the handlebars, except for spaces
+            // that separate different items (e.g., 'json' and '(get')
+            return Regex.Replace(m.Value, @"\s+", " ").Replace(" {", "{").Replace(" }", "}").Replace(" )", ")");
+        });
     }
 }
 
