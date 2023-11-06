@@ -1,12 +1,12 @@
 
 namespace Microsoft.SemanticKernel.Handlebars;
-public class ModelContext : IModelContext<IMessageContent>
+public class ModelContext
 {
-    private List<IMessageContent>? context { get; set; }
+    private List<object>? context { get; set; }
     public Dictionary<string, object>? Properties { get; set; }
 
     public ModelContext(
-        List<IMessageContent>? context = default,
+        List<object>? context = default,
         Dictionary<string, object>? properties = default
     )
     {
@@ -14,8 +14,8 @@ public class ModelContext : IModelContext<IMessageContent>
         Properties = properties;
     }
 
-    public List<IMessageContent> GetContext()
+    public List<object> GetContext()
     {
-        return context ?? new List<IMessageContent>();
+        return context ?? new List<object>();
     }
 }

@@ -2,9 +2,9 @@
 using System.Xml;
 
 namespace Microsoft.SemanticKernel.Handlebars;
-public class ImageContentFactory : IMessageContentFactory<ImageContent>
+public class ImageContentFactory : IMessageContentFactory
 {
-    public ImageContent ParseMessageContent(XmlNode node)
+    public object ParseMessageContent(XmlNode node)
     {
         ImageContent messageContent;
         if (node.NodeType == XmlNodeType.Element && node.Name == "img")

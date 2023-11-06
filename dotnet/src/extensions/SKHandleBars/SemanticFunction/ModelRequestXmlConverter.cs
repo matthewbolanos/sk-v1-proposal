@@ -1,25 +1,24 @@
 
 
 using System.Xml;
-using Microsoft.SemanticKernel.AI.ChatCompletion;
 
 namespace Microsoft.SemanticKernel.Handlebars;
 
-public class XmlToObjectConverter
+public class ModelRequestXmlConverter
 {
-    private readonly IMessageContentFactory<IMessageContent> messageContentFactory;
-    private readonly IModelContextFactory<ModelContext, IMessageContent> modelContextFactory;
+    private readonly IMessageContentFactory messageContentFactory;
+    private readonly IModelContextFactory modelContextFactory;
 
-    public XmlToObjectConverter(
-        IMessageContentFactory<IMessageContent> messageContentFactory,
-        IModelContextFactory<ModelContext, IMessageContent> modelContextFactory
+    public ModelRequestXmlConverter(
+        IMessageContentFactory messageContentFactory,
+        IModelContextFactory modelContextFactory
     )
     {
         this.messageContentFactory = messageContentFactory;
         this.modelContextFactory = modelContextFactory;
     }
 
-    public XmlToObjectConverter()
+    public ModelRequestXmlConverter()
     {
         this.messageContentFactory = new DefaultMessageContentFactory();
         this.modelContextFactory = new DefaultModelContextFactory();
@@ -30,7 +29,7 @@ public class XmlToObjectConverter
         if (messageNode.NodeType == XmlNodeType.Element && messageNode != null)
         {
             XmlElement messageElement = (XmlElement)messageNode;
-            List<IMessageContent> messageParts = new();
+            List<object> messageParts = new();
             foreach (XmlNode node in messageNode.ChildNodes)
             {
                 messageParts.Add(messageContentFactory.ParseMessageContent(node));
@@ -49,27 +48,25 @@ public class XmlToObjectConverter
         xmlDoc.LoadXml(xml);
         
         List<ModelMessage> modelMessages = new();
-        XmlNodeList messageNodes = xmlDoc.DocumentElement!.SelectNodes("//message")!;
+        List<object> modelContext = new();
+        XmlNode? root = xmlDoc.DocumentElement;
 
-        foreach (XmlNode messageNode in messageNodes)
+        // Check if the root is not null
+        if (root != null)
         {
-            try
-            {
-                ModelMessage modelMessage = ParseModelMessage(messageNode);
-                modelMessages.Add(modelMessage);
-            }
-            catch (NotImplementedException e)
-            {
-                throw new NotImplementedException(e.Message);
-            }
-        }
+            XmlNodeList childNodes = root.ChildNodes;
 
-        List<IModelContext<IMessageContent>> modelContext = new();
-        XmlNodeList contextNodes = xmlDoc.DocumentElement.SelectNodes("//*[not(self::message)]")!;
-
-        foreach (XmlNode node in contextNodes)
-        {
-            modelContext.Add(modelContextFactory.ParseModelContext(node, messageContentFactory));
+            foreach (XmlNode node in childNodes)
+            {
+                if (node.NodeType == XmlNodeType.Element && node.Name == "message")
+                {
+                    ModelMessage modelMessage = ParseModelMessage(node);
+                    modelMessages.Add(modelMessage);
+                } else
+                {
+                    modelContext.Add(modelContextFactory.ParseModelContext(node, messageContentFactory));
+                }
+            }
         }
         return new ModelRequest(modelMessages, modelContext);
     }

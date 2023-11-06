@@ -1,8 +1,8 @@
 
 namespace Microsoft.SemanticKernel.Handlebars;
-public class FunctionChoices : IModelContext<FunctionContent>
+public class FunctionChoices
 {
-    public List<FunctionContent>? Choices { get; set; }
+    private List<FunctionContent>? choices { get; set; }
     public Dictionary<string, object>? Properties { get; set; }
 
     public FunctionChoices(
@@ -10,12 +10,12 @@ public class FunctionChoices : IModelContext<FunctionContent>
         Dictionary<string, object>? properties = default
     )
     {
-        Choices = choices;
+        this.choices = choices;
         Properties = properties;
     }
 
-    public List<FunctionContent> GetContext()
+    public List<object> GetContext()
     {
-        throw new NotImplementedException();
+        return choices?.Select(choice => (object)choice).ToList() ?? new List<object>();
     }
 }

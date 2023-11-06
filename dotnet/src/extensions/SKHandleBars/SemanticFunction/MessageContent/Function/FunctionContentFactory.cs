@@ -1,25 +1,25 @@
 
 using System.Xml;
 
-namespace Microsoft.SemanticKernel.Handlebars;
-public class FunctionContentFactory : IMessageContentFactory<FunctionContent>
+namespace Microsoft.SemanticKernel.Handlebars
 {
-    public FunctionContent ParseMessageContent(XmlNode node)
+    public class FunctionContentFactory : IMessageContentFactory
     {
-        FunctionContent messageContent;
-        if (node.NodeType == XmlNodeType.Element && node.Name == "function")
+        public object ParseMessageContent(XmlNode node)
         {
-            XmlElement element = (XmlElement)node;
-            string pluginName = element.GetAttribute("PluginName");
-            string name = element.GetAttribute("name");
-            messageContent = new FunctionContent(pluginName, name);
-        } else
-        {
-            throw new NotImplementedException();
+            FunctionContent messageContent;
+            if (node.NodeType == XmlNodeType.Element && node.Name == "function")
+            {
+                XmlElement element = (XmlElement)node;
+                string pluginName = element.GetAttribute("PluginName");
+                string name = element.GetAttribute("name");
+                messageContent = new FunctionContent(pluginName, name);
+            } else
+            {
+                throw new NotImplementedException();
+            }
+
+            return messageContent;
         }
-
-        return messageContent;
     }
-
-    
 }

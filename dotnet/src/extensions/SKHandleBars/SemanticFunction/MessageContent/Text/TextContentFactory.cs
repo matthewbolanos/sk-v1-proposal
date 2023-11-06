@@ -2,14 +2,14 @@
 using System.Xml;
 
 namespace Microsoft.SemanticKernel.Handlebars;
-public class TextContentFactory : IMessageContentFactory<TextContent>
+public class TextContentFactory : IMessageContentFactory
 {
-    public TextContent ParseMessageContent(XmlNode node)
+    public object ParseMessageContent(XmlNode node)
     {
-        TextContent messageContent;
+        string messageContent;
         if (node.NodeType == XmlNodeType.Text)
         {
-            messageContent = new TextContent(node.Value!);
+            messageContent = node.Value!.Trim();
         }
         else
         {

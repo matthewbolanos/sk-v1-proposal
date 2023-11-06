@@ -2,13 +2,13 @@
 using Microsoft.SemanticKernel.AI.TextCompletion;
 
 namespace Microsoft.SemanticKernel.Handlebars;
-public class LabelChoices : IModelContext<TextContent>
+public class LabelChoices
 {
-    private readonly List<TextContent>? choices;
+    private readonly List<string>? choices;
     public Dictionary<string, object>? Properties { get; set; }
 
     public LabelChoices(
-        List<TextContent>? choices = default,
+        List<string>? choices = default,
         Dictionary<string, object>? properties = default
     )
     {
@@ -16,8 +16,8 @@ public class LabelChoices : IModelContext<TextContent>
         Properties = properties;
     }
 
-    public List<TextContent> GetContext()
+    public List<object> GetContext()
     {
-        return choices ?? new List<TextContent>();
+        return choices?.Select(choice => (object)choice).ToList() ?? new List<object>();
     }
 }

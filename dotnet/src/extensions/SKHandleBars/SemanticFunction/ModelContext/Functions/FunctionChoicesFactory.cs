@@ -2,9 +2,9 @@
 using System.Xml;
 
 namespace Microsoft.SemanticKernel.Handlebars;
-public class FunctionChoicesFactory : IModelContextFactory<FunctionChoices, FunctionContent>
+public class FunctionChoicesFactory : IModelContextFactory
 {
-    public FunctionChoices ParseModelContext(XmlNode contextNode, IMessageContentFactory<FunctionContent> messageContentFactory)
+    public object ParseModelContext(XmlNode contextNode, IMessageContentFactory messageContentFactory)
     {
         if (contextNode.NodeType == XmlNodeType.Element && contextNode.Name == "functions")
         {
@@ -13,7 +13,7 @@ public class FunctionChoicesFactory : IModelContextFactory<FunctionChoices, Func
             {
                 foreach (XmlNode node in contextNode.ChildNodes)
                 {
-                    choices.Add(messageContentFactory.ParseMessageContent(node));
+                    choices.Add((FunctionContent)messageContentFactory.ParseMessageContent(node));
                 }
             }
             return new FunctionChoices(choices);

@@ -10,7 +10,7 @@ using Microsoft.SemanticKernel.Orchestration;
 using Microsoft.SemanticKernel.Services;
 
 namespace Microsoft.SemanticKernel.Handlebars;
-public interface IMessageContentFactory<T> where T : IMessageContent
+public interface IMessageContentFactory
 {
-    public T ParseMessageContent(XmlNode node);
+    public object ParseMessageContent(XmlNode node);
 }

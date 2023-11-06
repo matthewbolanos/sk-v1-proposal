@@ -1,6 +1,6 @@
 
 namespace Microsoft.SemanticKernel.Handlebars;
-public class ImageContent : IMessageContent
+public class ImageContent
 {
     public Uri ImageUri { get; set; }
     public string? MimeType { get; set; }

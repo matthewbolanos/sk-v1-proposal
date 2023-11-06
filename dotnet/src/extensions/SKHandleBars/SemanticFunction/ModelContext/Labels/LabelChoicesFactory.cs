@@ -2,18 +2,18 @@
 using System.Xml;
 
 namespace Microsoft.SemanticKernel.Handlebars;
-public class LabelChoicesFactory : IModelContextFactory<LabelChoices, TextContent>
+public class LabelChoicesFactory : IModelContextFactory
 {
-    public LabelChoices ParseModelContext(XmlNode contextNode, IMessageContentFactory<TextContent> messageContentFactory)
+    public object ParseModelContext(XmlNode contextNode, IMessageContentFactory messageContentFactory)
     {
         if (contextNode.NodeType == XmlNodeType.Element && contextNode.Name == "labels")
         {
-            List<TextContent> choices = new ();
+            List<string> choices = new ();
             if (contextNode != null)
             {
                 foreach (XmlNode node in contextNode.ChildNodes)
                 {
-                    choices.Add(messageContentFactory.ParseMessageContent(node));
+                    choices.Add((string)messageContentFactory.ParseMessageContent(node));
                 }
             }
             return new LabelChoices(choices);

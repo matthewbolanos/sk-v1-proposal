@@ -2,13 +2,13 @@
 using System.Xml;
 
 namespace Microsoft.SemanticKernel.Handlebars;
-public class ModelContextFactory : IModelContextFactory<ModelContext, IMessageContent>
+public class ModelContextFactory : IModelContextFactory
 {
-    public ModelContext ParseModelContext(XmlNode contextNode, IMessageContentFactory<IMessageContent> messageContentFactory)
+    public object ParseModelContext(XmlNode contextNode, IMessageContentFactory messageContentFactory)
     {
         if (contextNode.NodeType == XmlNodeType.Element && contextNode.Name == "context")
         {
-            List<IMessageContent> messageParts = new ();
+            List<object> messageParts = new ();
             if (contextNode != null)
             {
                 foreach (XmlNode node in contextNode.ChildNodes)
