@@ -42,7 +42,7 @@ async def runner():
     kernel = Kernel(
         ai_services=[gpt35turbo],
         plugins=[search_plugin],
-        post_hooks=[StreamingResultToStdOutHook(), TokenUsageHook()],
+        hooks=[StreamingResultToStdOutHook(), TokenUsageHook()],
     )
 
     # create chat_history
@@ -55,6 +55,7 @@ async def runner():
             break
         chat_history.add_user_message(user_input)
 
+        stream = True
         # get response
         response = await kernel.run_async(
             chat_function,
@@ -62,12 +63,13 @@ async def runner():
                 "persona": "You are a snarky (yet helpful) teenage assistant. Make sure to use hip slang in every response.",
                 "messages": chat_history,
             },
-            request_settings={"stream": False},
+            request_settings={"stream": stream},
         )
 
-        # print response
-        print(f"Assistant:> {response[chat_function.output_variable_name]}")
-        print(f"Token usage: {response['token_usage']}")
+        if not stream:
+            # print response
+            print(f"Assistant:> {response[chat_function.output_variable_name]}")
+            print(f"Token usage: {response['token_usage']}")
         chat_history.add_assistant_message(response[chat_function.output_variable_name])
 
 

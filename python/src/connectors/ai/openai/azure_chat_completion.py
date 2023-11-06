@@ -8,7 +8,7 @@ from semantic_kernel.skill_definition.parameter_view import ParameterView as Par
 
 from .openai_chat_history import OpenAIChatHistory
 
-logger = logging.getLogger(__name__)
+_LOGGER = logging.getLogger(__name__)
 
 RESPONSE_OBJECT_KEY: Final = "response_object"
 
@@ -55,7 +55,7 @@ class AzureChatCompletion(SKBaseModel, ChatCompletionClientBase):
         output_variables: list[Parameter] = None,
         **kwargs,
     ) -> dict:
-        logger.warning('Deprecated: use "complete_chat_async" instead')
+        _LOGGER.warning('Deprecated: use "complete_chat_async" instead')
         return await self.complete_chat_async(
             rendered_template, request_settings, output_variables, **kwargs
         )

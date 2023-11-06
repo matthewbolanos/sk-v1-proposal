@@ -1,51 +1,63 @@
 import sys
 from typing import Any, AsyncGenerator
 
-from ....hooks import PostHookBase
+from ....hooks import HookBase
 from .azure_chat_completion import RESPONSE_OBJECT_KEY
 
 
-class StreamingResultToStdOutHook(PostHookBase):
+class StreamingResultToStdOutHook(HookBase):
     name: str = "streaming_result_to_stdout"
     result_key: str = "result"
     line_prefix: str = "Assistant:> "
 
-    async def __call__(
-        self, results: list[dict[str, Any]], *args: Any, **kwds: Any
-    ) -> list[dict[str, Any]]:
+    async def output_openai_object(
+        self, openai_oject: AsyncGenerator
+    ) -> dict[str, Any]:
         """
         Call the hook.
 
         :param result: The result to print.
         :return: The result to use.
         """
-        for result in results:
-            full_content = ""
-            if RESPONSE_OBJECT_KEY in result:
-                full_res = result[RESPONSE_OBJECT_KEY]
-                if not isinstance(full_res, AsyncGenerator):
+        full_content = ""
+        async for res in openai_oject:
+            for choice in res.choices:
+                if "delta" not in choice:
                     continue
-                async for res in full_res:
-                    for choice in res.choices:
-                        if "delta" not in choice:
-                            continue
-                        if "role" in choice.delta:
-                            sys.stdout.write(self.line_prefix)
+                if "role" in choice.delta:
+                    sys.stdout.write(self.line_prefix)
+                if "content" in choice.delta:
+                    full_content += str(choice.delta.content)
+                    sys.stdout.write(str(choice.delta.content))
+        sys.stdout.write("\n")
+        return full_content
 
-                        if "content" in choice.delta:
-                            full_content += str(choice.delta.content)
-                            sys.stdout.write(str(choice.delta.content))
-            result[self.result_key] = full_content
-            sys.stdout.write("\n")
-        return results
+    async def on_invoke_end(
+        self,
+        results: list[dict],
+        variables: dict[str, Any] | None = None,
+        request_settings: dict[str, Any] | None = None,
+        kwargs: dict | None = None,
+    ) -> tuple[list[dict], dict[str, Any] | None, dict[str, Any] | None, dict | None]:
+        for result in results:
+            if RESPONSE_OBJECT_KEY in result:
+                if not isinstance(result[RESPONSE_OBJECT_KEY], AsyncGenerator):
+                    return results, variables, request_settings, kwargs
+            completion = await self.output_openai_object(result[RESPONSE_OBJECT_KEY])
+            result[self.result_key] = completion
+        return results, variables, request_settings, kwargs
 
 
-class TokenUsageHook(PostHookBase):
+class TokenUsageHook(HookBase):
     name: str = "token_usage"
 
-    async def __call__(
-        self, results: list[dict[str, Any]], *args: Any, **kwargs: Any
-    ) -> list[dict[str, Any]]:
+    async def on_invoke_end(
+        self,
+        results: list[dict],
+        variables: dict[str, Any] | None = None,
+        request_settings: dict[str, Any] | None = None,
+        kwargs: dict | None = None,
+    ) -> tuple[list[dict], dict[str, Any] | None, dict[str, Any] | None, dict | None]:
         for result in results:
             if RESPONSE_OBJECT_KEY in result:
                 full_res = result[RESPONSE_OBJECT_KEY]
@@ -57,4 +69,4 @@ class TokenUsageHook(PostHookBase):
                         "completion_tokens": full_res.usage.completion_tokens,
                         "total_tokens": full_res.usage.total_tokens,
                     }
-        return results
+        return results, variables, request_settings, kwargs

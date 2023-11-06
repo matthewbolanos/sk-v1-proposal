@@ -1,9 +1,12 @@
 import asyncio
+import logging
 from typing import Any
 
 from semantic_kernel.skill_definition.parameter_view import ParameterView as Parameter
 
 from .sk_function import SKFunction
+
+_LOGGER = logging.getLogger(__name__)
 
 
 class NativeFunction(SKFunction):

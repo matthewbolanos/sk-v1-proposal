@@ -1,20 +1,32 @@
-from abc import abstractmethod
 from typing import Any
 
 from semantic_kernel.sk_pydantic import SKBaseModel
+
+from python.src.plugins.sk_function import SKFunction
 
 
 class HookBase(SKBaseModel):
     name: str
 
-    @abstractmethod
-    async def __call__(self, *args: Any, **kwds: Any) -> Any:
-        pass
+    async def on_invoke_start(
+        self,
+        functions: list[SKFunction] | SKFunction,
+        variables: dict[str, Any] | None = None,
+        request_settings: dict[str, Any] | None = None,
+        kwargs: dict | None = None,
+    ) -> tuple[
+        list[SKFunction] | SKFunction,
+        dict[str, Any] | None,
+        dict[str, Any] | None,
+        dict | None,
+    ]:
+        return functions, variables, request_settings, kwargs
 
-
-class PostHookBase(HookBase):
-    @abstractmethod
-    async def __call__(
-        self, results: list[dict[str, Any]], *args: Any, **kwds: Any
-    ) -> list[dict[str, Any]]:
-        pass
+    async def on_invoke_end(
+        self,
+        results: list[dict],
+        variables: dict[str, Any] | None = None,
+        request_settings: dict[str, Any] | None = None,
+        kwargs: dict | None = None,
+    ) -> tuple[list[dict], dict[str, Any] | None, dict[str, Any] | None, dict | None]:
+        return results, variables, request_settings, kwargs
