@@ -18,6 +18,10 @@ public abstract class AIService : IAIService
         ModelId = modelId;
     }
 
-    public abstract Task<FunctionResult> GetModelResultAsync(string pluginName, string name, string prompt);
-    public abstract Task<FunctionResult> GetModelStreamingResultAsync(string pluginName, string name, string prompt);
+    public abstract List<Type> OutputTypes();
+
+    public abstract List<string> Capabilities();
+
+    public abstract Task<FunctionResult> GetModelResultAsync(string pluginName, string name, string prompt, Dictionary<object, BinaryFile>? files = default);
+    public abstract Task<FunctionResult> GetModelStreamingResultAsync(string pluginName, string name, string prompt, Dictionary<object, BinaryFile>? files = default);
 }

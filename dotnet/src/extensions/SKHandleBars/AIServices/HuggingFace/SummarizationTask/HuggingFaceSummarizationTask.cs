@@ -33,7 +33,7 @@ public sealed class HuggingFaceSummarizationTask : AIService
         this._endpoint = endpoint;
     }
 
-    public async override Task<FunctionResult> GetModelResultAsync(string pluginName, string name, string prompt)
+    public async override Task<FunctionResult> GetModelResultAsync(string pluginName, string name, string prompt, Dictionary<object, BinaryFile>? files = default)
     {
         ModelRequest modelRequest = modelRequestXmlConverter.ParseXml(prompt);
 
@@ -43,7 +43,7 @@ public sealed class HuggingFaceSummarizationTask : AIService
         {
             throw new SKException("HuggingFaceSummarizationTask only supports a single user message");
         }
-        
+
         var results = await this.ExecuteGetCompletionsAsync(
             userMessages[0].Content.ToString()!
         ).ConfigureAwait(false);
@@ -54,9 +54,25 @@ public sealed class HuggingFaceSummarizationTask : AIService
         return result;
     }
 
-    public override Task<FunctionResult> GetModelStreamingResultAsync(string pluginName, string name, string prompt)
+    public override Task<FunctionResult> GetModelStreamingResultAsync(string pluginName, string name, string prompt, Dictionary<object, BinaryFile>? files = default)
     {
         throw new NotImplementedException();
+    }
+
+    public override List<Type> OutputTypes()
+    {
+        return new List<Type>
+        {
+            typeof(string)
+        };
+    }
+
+    public override List<string> Capabilities()
+    {
+        return new List<string>
+        {
+            "summarization"
+        };
     }
 
     #region private ================================================================================

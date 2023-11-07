@@ -1,0 +1,13 @@
+name: ImageToTextTask
+template: |
+  {{#message role="user"}}
+  <img id={{image.id}} />
+  {{/message}}
+template_format: handlebars
+description: A function that generates a description of an image.
+input_variables:
+output_variable:
+    type: string
+    description: The text description of the image.
+execution_settings:
+  - model_id_pattern: ^nlpconnect/vit-gpt2-image-captioning

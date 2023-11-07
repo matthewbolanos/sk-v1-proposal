@@ -7,11 +7,14 @@ namespace Microsoft.SemanticKernel.Handlebars;
 /// <summary>
 /// HTTP Schema for completion response.
 /// </summary>
-public sealed class Image : BinaryFile
+public abstract class BinaryFile
 {
-    public override string ToString() {
-        return $"Image: {ContentType} ({Bytes?.Length} bytes)";
-    }
+    public Guid Id { get; set; } = Guid.NewGuid();
+
+    public string? ContentType { get; set; }
+
+    public byte[]? Bytes { get; set;}
+
 }
 
 

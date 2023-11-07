@@ -32,7 +32,7 @@ public class OpenAIChatCompletion : AIService, IChatCompletion
         return this.azureChatCompletion.GetStreamingChatCompletionsAsync(chat, requestSettings, cancellationToken);
     }
 
-    public async override Task<FunctionResult> GetModelResultAsync(string pluginName, string name, string prompt)
+    public async override Task<FunctionResult> GetModelResultAsync(string pluginName, string name, string prompt, Dictionary<object, BinaryFile>? files = default)
     {
         ChatHistory chatHistory = this.ChatHistoryFromPrompt(prompt);
 
@@ -44,12 +44,28 @@ public class OpenAIChatCompletion : AIService, IChatCompletion
         return result;
     }
 
-    public async override Task<FunctionResult> GetModelStreamingResultAsync(string pluginName, string name, string prompt)
+    public async override Task<FunctionResult> GetModelStreamingResultAsync(string pluginName, string name, string prompt, Dictionary<object, BinaryFile>? files = default)
     {
         ChatHistory chatHistory = this.ChatHistoryFromPrompt(prompt);
 
         IAsyncEnumerable<IChatStreamingResult> completionResults = this.GetStreamingChatCompletionsAsync(chatHistory);
         return new FunctionResult(name, pluginName, ConvertToStrings(completionResults), ConvertToFinalStringAsync(completionResults));
+    }
+
+    public override List<Type> OutputTypes()
+    {
+        return new List<Type>
+        {
+            typeof(string)
+        };
+    }
+
+    public override List<string> Capabilities()
+    {
+        return new List<string>
+        {
+            "chat"
+        };
     }
     
     private async IAsyncEnumerable<string> ConvertToStrings(IAsyncEnumerable<IChatStreamingResult> completionResults)

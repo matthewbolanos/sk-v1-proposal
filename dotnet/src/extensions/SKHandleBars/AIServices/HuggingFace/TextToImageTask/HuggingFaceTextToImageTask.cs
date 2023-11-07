@@ -33,7 +33,7 @@ public sealed class HuggingFaceTextToImageTask : AIService
         this._endpoint = endpoint;
     }
 
-    public async override Task<FunctionResult> GetModelResultAsync(string pluginName, string name, string prompt)
+    public async override Task<FunctionResult> GetModelResultAsync(string pluginName, string name, string prompt, Dictionary<object, BinaryFile>? files = default)
     {
         ModelRequest modelRequest = modelRequestXmlConverter.ParseXml(prompt);
 
@@ -52,9 +52,22 @@ public sealed class HuggingFaceTextToImageTask : AIService
         return result;
     }
 
-    public override Task<FunctionResult> GetModelStreamingResultAsync(string pluginName, string name, string prompt)
+    public override Task<FunctionResult> GetModelStreamingResultAsync(string pluginName, string name, string prompt, Dictionary<object, BinaryFile>? files = default)
     {
         throw new NotImplementedException();
+    }
+
+    public override List<Type> OutputTypes()
+    {
+        return new List<Type>
+        {
+            typeof(string)
+        };
+    }
+
+    public override List<string> Capabilities()
+    {
+        return new List<string>();
     }
 
     #region private ================================================================================
