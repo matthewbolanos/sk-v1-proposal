@@ -1,6 +1,6 @@
-# Simple RAG chat
+# Multi-modal sample
 
-This sample demonstrates how to create a chat bot that performs basic RAG with V1 of Semantic Kernel.
+This sample demonstrates how to use other models with Semantic Kernel.
 
 ## Prerequisites
 
@@ -20,6 +20,7 @@ dotnet user-secrets set "AzureOpenAI:Gpt35TurboDeploymentName" "gpt-35-turbo"
 dotnet user-secrets set "AzureOpenAI:Gpt4DeploymentName" "gpt-4"
 dotnet user-secrets set "AzureOpenAI:Endpoint" "... your Azure OpenAI endpoint ..."
 dotnet user-secrets set "AzureOpenAI:ApiKey" "... your Azure OpenAI key ..."
+dotnet user-secrets set "OpenAI:ApiKey" "... your OpenAI key ..."
 dotnet user-secrets set ""Bing:ApiKey" "... your Bing key ..."
 dotnet user-secrets set "HuggingFace:ApiKey" "... your Hugging Face key ..."
 dotnet user-secrets set "HuggingFace:FillMaskTaskEndpoint" "... your Hugging Face endpoint ..."
