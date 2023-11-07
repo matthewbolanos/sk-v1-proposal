@@ -224,9 +224,9 @@ public class HandlebarsPromptTemplateEngine : IPromptTemplateEngine
                 throw new Exception("Message must have a role.");
             }
 
-            writer.Write($"<{parameters["role"]}>", false);
+            writer.Write($"<message role=\"{parameters["role"]}\">", false);
             options.Template(writer, context);
-            writer.Write($"</{parameters["role"]}>", false);
+            writer.Write($"</message>", false);
         });
 
         handlebarsInstance.RegisterHelper("raw", (writer, options, context, arguments) => {
