@@ -1,92 +1,129 @@
 name: HandlebarsPlanner
 template: |
-  {{#if lastError}}
-  {{#message role="user"}}Can you help me write a Handlebars template that achieves the following goal?{{/message}}
-  {{#message role="user"}}{{goal}}{{/message}}
-  {{#message role="assistant"}}```
-  {{lastPlan}}
-  ```{{/message}}
-  {{#message role="user"}}This plan doesn't work, I get this error: "{{lastError}}"{{/message}}
-  {{#message role="assistant"}}I'm sorry, let me try to fix it.{{/message}}
   {{#message role="system"}}## Instructions
-  A previous agent tried to create a Handlebars template, but it was invalid.{{/message}}
-  {{#message role="system"}}You must completely rewrite the template so that it no longer has an error by fixing the syntax or by using the correct methods{{/message}}
-  {{else}}
-  {{#message role="user"}}Can you help me write a Handlebars template that achieves the following goal?{{/message}}
-  {{#message role="user"}}{{goal}}{{/message}}
-  {{#message role="system"}}## Instructions
-  Create a Handlebars template that describes the steps necessary to accomplish the user's goal in a numbered list.
-  {{/message}}
-  {{/if}}
+  Explain how to achieve the user's goal with the available helpers with a Handlebars template.
   
-  {{#message role="system"}}## Tips and tricks
-  - Use the `{{{{raw}}}}{{set name='var' value=var}}{{{{/raw}}}}` helper to save the results of a helper so that you can use it later in the template without wasting resources calling the same helper multiple times.
-  - There are no initial variables available to you. You must create them yourself using the {{{{raw}}}}`{{set}}`{{{{/raw}}}} helper.
-  - Do not chain helpers since you have a tendency to create syntax errors when you do; use the {{{{raw}}}}`{{set}}`{{{{raw}}}} helper instead. For example, don't do this: {{{{raw}}}}`{{Helper_Function input=(array 1 2 3)}}` but instead create the variable and _then_ use it: `{{set name='var' value=(array 1 2 3)}}{{Helper_Function input=var}}`{{{{/raw}}}}
-  - Use hash arguments when using custom helpers; this helps ensure the template renders correctly.
-  - Be extremely careful about types. For example, if you pass an array to a helper that expects a number, the template will error out.
-  - There is no need to check your results in the template.
+  ## Example
+  If the user wanted you to generate 10 random numbers and use them in another helper, you could answer with the following.{{/message}}
 
-  ## Bonus
-  If you can correctly guess the output of the helpers before providing the template, you'll get extra credit.
-  For example, if you think that the output of the `{{{{raw}}}}{{random}}{{{{/raw}}}}` helper is `42`, then provide a guess like this:
-  {{/message}}
+  {{#message role="user"}}Please show me how to write a Handlebars template that achieves the following goal.
+  
+  ##Goal
+  I want you to generate 10 random numbers and send them to another helper.{{/message}}
 
-  {{#message role="system"}}
-  User: "Can you generate a random number?"
+  {{#message role="assistant"}}Here's the Handlebars template that achieves the goal:
 
-  Assistant: "1. Generate a random number (Guess: 42)"
+  ```handlebars
+  {{!-- Step 1: initialize the count --}}
+  \{{set
+    "count"
+    10
+  }}
+  The count variable: \{{json
+    (get
+      "count"
+    )
+  }}
 
-  ```
-  {{{{raw}}}}{{set name="randomNumber" value=(random)}}
-  1. Generate a random number: {{randomNumber}}.{{{{/raw}}}}
+  {{!-- Step 2: loop using the count --}}
+  \{{#each
+    (range
+      1
+      (get
+        "count"
+      )
+    )
+  }}
+    \{{set
+      "index"
+      this
+    }}
+    {{!-- Step 3: create random number --}}
+    \{{set
+      "randomNumber"
+      (example.random
+        seed=index
+      )
+    }}
+    The random number: \{{json 
+      (get
+        "randomNumber"
+      )
+    }}
+    {{!-- Step 4: call example helper with random number --}}
+    The example helper result: \{{json
+      (example.helper
+        input=(get
+          "randomNumber"
+        )
+      )
+    }}
+  \{{/each}}
   ```{{/message}}
 
-  {{#message role="system"}}## Out of the box helpers
+  {{#message role="system"}}Now let's try the real thing.{{/message}}
+
+  {{#message role="user"}}Please show me how to write a Handlebars template that achieves the following goal with the available helpers.
+  
+  ##Goal
+  {{goal}}
+  
+  ## Out-of-the-box helpers
+  The following helpers are available to you:
   - {{{{raw}}}}`{{#if}}{{/if}}`{{{{/raw}}}}
   - {{{{raw}}}}`{{#unless}}{{/unless}}}`{{{{/raw}}}}
   - {{{{raw}}}}`{{#each}}{{/each}}`{{{{/raw}}}}
   - {{{{raw}}}}`{{#with}}{{/with}}`{{{{/raw}}}}
+
+  ## Loop helpers
+  If you need to loop through a list of values with `\{{#each}}`, you can use the following helpers:
+  - {{{{raw}}}}`{{range}}`{{{{/raw}}}} – Generates a range of numbers from the given start to the given end.
+  - {{{{raw}}}}`{{array}}`{{{{/raw}}}} – Generates an array of values from the given values.
+
+  ## Comparison helpers
+  If you need to compare two values, you can use the following helpers:
   - {{{{raw}}}}`{{equal}}`{{{{/raw}}}}
   - {{{{raw}}}}`{{lessThan}}`{{{{/raw}}}}
   - {{{{raw}}}}`{{greaterThan}}`{{{{/raw}}}}
   - {{{{raw}}}}`{{lessThanOrEqual}}`{{{{/raw}}}}
   - {{{{raw}}}}`{{greaterThanOrEqual}}`{{{{/raw}}}}
 
+  To use the comparison helpers, you must pass in two positional values. For example, to check if the variable `var` is equal to the number `1`, you would use the following helper like so: `\{{#if (equal var 1)}}\{{/if}}`.
+
+  ## Variable helpers
+  If you need to create or retrieve a variable, you can use the following helpers:
+  - {{{{raw}}}}`{{set}}`{{{{/raw}}}} – Creates a variable with the given name and value. It does not print anything to the template, so you must use `\{{json}}` to print the value.
+  - {{{{raw}}}}`{{get}}`{{{{/raw}}}} – Retrieves the value of a variable with the given name.
+  - {{{{raw}}}}`{{json}}`{{{{/raw}}}} – Generates a JSON string from the given value; no need to use on strings.
+
   ## Custom helpers
-  You also have the following Handlebars helpers that you can use to accomplish the user's goal:
+  Lastly, you also have the following Handlebars helpers that you can use to accomplish my goal.{{#each functions}}
 
-  ### set
-  Description: Updates the Handlebars variable with the given name to the given value. It does not print anything to the screen.
-  Inputs:
-    - name: string - The name of the variable to set.
-    - value: any - The value to set the variable to.
-  Output: None - This helper does not print anything to the screen.
-
-  ### json
-  Description: Generates a JSON string from the given value.
-  Inputs:
-    - value: string - The value to generate JSON for.
-  Output: string - The JSON string.
-
-  {{#each functions}}
-  ### {{PluginName}}_{{Name}}
+  ### `{{doubleOpen}}{{toCamelCase PluginName}}.{{toCamelCase Name}}{{doubleClose}}`
   Description: {{Description}}
   Inputs:
   {{#each Parameters}}
-    - {{Name}}: {{Type}} - {{Description}} {{#if IsRequired}}(required){{else}}(optional){{/if}}
+    - {{Name}}: {{Type.Name}} - {{Description}} {{#if IsRequired}}(required){{else}}(optional){{/if}}
   {{/each}}
   Output: string - The result of the helper.{{/each}}{{/message}}
 
-  {{#message role="system"}}Take a deep breath and accomplish the following:
-  1. Describe the steps you'll take to accomplish the user's goal using as few words as possible
-  2. Provide the user with an efficient Handlebars template that completes the steps; don't forget to use the tips and tricks otherwise the template will not work{{/message}}
+  {{#message role="system"}}  
+  ## Tips and tricks
+  - Add a comment above each step to describe what the step does
+  - Use the `\{{set}}` and `\{{get}}` helpers to save and retrieve the results of another helper so you can use it later in the template without wasting resources.
+  - There are no initial variables available to you. You must create them yourself using the `\{{set}}` helper and then use them with `\{{get}}`
+  - Be extremely careful about types. For example, if you pass an array to a helper that expects a number, the template will error out.
+  - Loops can be tricky, so only use them if they're absolutely necessary.
+  - There is no need to check your results in the template.
+  - Do not nest sub-expressions because it will cause the template to error out.
 
-  {{#message role="assistant"}}I'll share the template with you in a bit! In the template, you'll see that I used the helpers you provided to render the results of each step.{{/message}}
+  ## Start
+  Now take a deep breath and accomplish the task:
+  1. The first steps should always be to initialize any variables you need
+  2. During each step (including the first one), the template should use the \{{json}} helper to output the result of the step
+  3. Don't forget to use the tips and tricks otherwise the template will not work
+  4. Don't close the ``` handlebars block until you're done with all the steps{{/message}}
 
-  {{#message role="assistant"}}But first, I'll succinctly explain the steps I took to achieve the user's goal before sharing the actual template in a wrapped ``` code block.
-  I even provided guesses for each step to get extra credit!{{/message}}
-  
 template_format: Handlebars
 description: A function that generates a plan to accomplish a user's goal.
 input_variables:

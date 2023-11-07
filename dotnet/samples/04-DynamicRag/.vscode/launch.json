@@ -9,11 +9,12 @@
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build",
-            "program": "${workspaceFolder}/bin/Debug/net6.0/04-DynamicRag.dll",
+            "program": "${workspaceFolder}/bin/Debug/net7.0/04-DynamicRag.dll",
             "args": [],
             "cwd": "${workspaceFolder}",
             "console": "integratedTerminal",
-            "stopAtEntry": false
+            "stopAtEntry": false,
+            "requireExactSource": false
         },
         {
             "name": ".NET Core Attach",

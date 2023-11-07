@@ -6,6 +6,8 @@ using Microsoft.SemanticKernel.AI;
 using Microsoft.SemanticKernel.AI.TextCompletion;
 using YamlDotNet.Serialization;
 using System.Text.RegularExpressions;
+using System.Runtime.CompilerServices;
+using System.Net;
 
 namespace Microsoft.SemanticKernel.Handlebars;
 

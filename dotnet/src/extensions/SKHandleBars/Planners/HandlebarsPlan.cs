@@ -19,19 +19,17 @@ namespace Microsoft.SemanticKernel.Handlebars;
 public sealed class HandlebarsPlan : IPlan
 {
     private readonly IKernel kernel;
-    private readonly string promptTemplate;
-    private readonly string template;
+    private readonly List<string> templates;
 
-    public HandlebarsPlan(IKernel kernel, string template)
+    public HandlebarsPlan(IKernel kernel, List<string> templates)
     {
         this.kernel = kernel;
-        this.template = template;
-        promptTemplate = template;
+        this.templates = templates;
     }
 
     public override string ToString()
     {
-        return template;
+        return String.Join("\n", templates);
     }
 
     public string Name => throw new NotImplementedException();
@@ -52,8 +50,37 @@ public sealed class HandlebarsPlan : IPlan
         Dictionary<string, object?> variables,
         CancellationToken cancellationToken = default)
     {
-        string results = await kernel.PromptTemplateEngine.RenderAsync(kernel, template, variables, cancellationToken);
-        string decodedResults = WebUtility.HtmlDecode(results);
+        string decodedResults = "";
+        foreach (var template in templates)
+        {
+            Console.ForegroundColor = ConsoleColor.Cyan;
+            Console.WriteLine(template);
+            try {
+                Match match = Regex.Match(template, @"```\s*(handlebars)?\s+(.*)", RegexOptions.Singleline);
+
+                string handlebarsTemplate = "";
+                if (match.Success)
+                {
+                    handlebarsTemplate = match.Groups[2].Value;
+                }
+                else {
+                    handlebarsTemplate = template;
+                }
+
+                string results = await kernel.PromptTemplateEngine.RenderAsync(kernel, handlebarsTemplate, variables, cancellationToken);
+                decodedResults = WebUtility.HtmlDecode(results);
+                // if (decodedResults != "")
+                // {
+                //     return new FunctionResult("Plan", "Planner", decodedResults);
+                // }
+                Console.ForegroundColor = ConsoleColor.Green;
+                Console.WriteLine(decodedResults.Trim());
+            } catch (Exception e) {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine(e.Message);
+            }
+            Console.ResetColor();
+        }
 
         return new FunctionResult("Plan", "Planner", decodedResults);
     }
