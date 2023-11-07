@@ -29,7 +29,7 @@ public class ModelRequestXmlConverter
         if (messageNode.NodeType == XmlNodeType.Element && messageNode != null)
         {
             XmlElement messageElement = (XmlElement)messageNode;
-            List<object> messageParts = new();
+            MessageParts messageParts = new();
             foreach (XmlNode node in messageNode.ChildNodes)
             {
                 messageParts.Add(messageContentFactory.ParseMessageContent(node));
@@ -48,7 +48,7 @@ public class ModelRequestXmlConverter
         xmlDoc.LoadXml(xml);
         
         List<ModelMessage> modelMessages = new();
-        List<object> modelContext = new();
+        Dictionary<string, object> modelContext = new();
         XmlNode? root = xmlDoc.DocumentElement;
 
         // Check if the root is not null
@@ -64,7 +64,7 @@ public class ModelRequestXmlConverter
                     modelMessages.Add(modelMessage);
                 } else
                 {
-                    modelContext.Add(modelContextFactory.ParseModelContext(node, messageContentFactory));
+                    modelContext.Add(node.Name, modelContextFactory.ParseModelContext(node, messageContentFactory));
                 }
             }
         }

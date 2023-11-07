@@ -1,4 +1,7 @@
 
+using System.Collections;
+using System.Text;
+
 namespace Microsoft.SemanticKernel.Handlebars;
 public class ModelMessage
 {

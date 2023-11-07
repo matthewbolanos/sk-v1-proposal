@@ -1,0 +1,13 @@
+name: GroundedChat
+template: |
+  {{#message role="user"}}
+  Astronaut riding a horse.
+  {{/message}}
+template_format: handlebars
+description: A function that gets uses the chat history to respond to the user.
+input_variables:
+output_variable:
+    type: Image
+    description: The top prediction from the model.
+execution_settings:
+  - model_id_pattern: ^runwayml/stable-diffusion-v1-5

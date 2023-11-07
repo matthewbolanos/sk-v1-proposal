@@ -18,4 +18,9 @@ public class ModelContext
     {
         return context ?? new List<object>();
     }
+
+    public override string ToString()
+    {
+        return string.Join("", GetContext());
+    }
 }

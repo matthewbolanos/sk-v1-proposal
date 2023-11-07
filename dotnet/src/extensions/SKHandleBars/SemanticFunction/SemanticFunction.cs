@@ -4,12 +4,8 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.SemanticKernel.AI;
 using Microsoft.SemanticKernel.AI.TextCompletion;
-using Microsoft.SemanticKernel.Services;
 using YamlDotNet.Serialization;
-using Microsoft.SemanticKernel.AI.ChatCompletion;
 using System.Text.RegularExpressions;
-using System.Runtime.CompilerServices;
-using System.Net;
 
 namespace Microsoft.SemanticKernel.Handlebars;
 
@@ -44,33 +40,36 @@ public sealed class SemanticFunction : ISKFunction, IDisposable
         var skFunction = deserializer.Deserialize<SemanticFunctionModel>(yamlContent);
 
         List<ParameterView> inputParameters = new List<ParameterView>();
-        foreach(var inputParameter in skFunction.InputVariables)
+        if (skFunction.InputVariables is not null)
+        {foreach(var inputParameter in skFunction.InputVariables)
         {
             Type parameterViewType;
-            switch(inputParameter.Type)
-            {
-                case "string":
-                    parameterViewType = typeof(string);
-                    break;
-                case "number":
-                    parameterViewType = typeof(double);
-                    break;
-                case "boolean":
-                    parameterViewType = typeof(bool);
-                    break;
-                default:
-                    parameterViewType = typeof(object);
-                    break;
-            }
+                switch(inputParameter.Type)
+                {
+                    case "string":
+                        parameterViewType = typeof(string);
+                        break;
+                    case "number":
+                        parameterViewType = typeof(double);
+                        break;
+                    case "boolean":
+                        parameterViewType = typeof(bool);
+                        break;
+                    default:
+                        parameterViewType = typeof(object);
+                        break;
+                }
 
-            inputParameters.Add(new ParameterView(
-                inputParameter.Name,
-                parameterViewType,
-                inputParameter.Description,
-                inputParameter.DefaultValue,
-                inputParameter.IsRequired
-            ));
+                inputParameters.Add(new ParameterView(
+                    inputParameter.Name,
+                    parameterViewType,
+                    inputParameter.Description,
+                    inputParameter.DefaultValue,
+                    inputParameter.IsRequired
+                ));
+            }
         }
+        
 
         var func = new SemanticFunction(
             functionName: skFunction.Name,
@@ -127,10 +126,10 @@ public sealed class SemanticFunction : ISKFunction, IDisposable
         bool streaming = false
     )
     {
-        IAIService? client = null;
+        AIService? client = null;
         foreach(ExecutionSettingsModel executionSettings in this.ExecutionSettings)
         {
-            foreach(IAIService aIService in ((Kernel)kernel).GetAllServices())
+            foreach(AIService aIService in ((Kernel)kernel).GetAllServices())
             {
                 if (aIService is AIService service)
                 {
@@ -158,85 +157,24 @@ public sealed class SemanticFunction : ISKFunction, IDisposable
             }
         }
 
-        client ??= ((Kernel)kernel).GetDefaultService();
+        client ??= (AIService)((Kernel)kernel).GetDefaultService();
 
         FunctionResult result;
 
         // Render the prompt
         string renderedPrompt = await kernel.PromptTemplateEngine.RenderAsync(kernel, PromptTemplate, variables, cancellationToken);
-
-        if(client is IChatCompletion completion)
+        renderedPrompt = "<request>" + renderedPrompt + "</request>";
+  
+        if (streaming)
         {
-
-            // Extract the chat history from the rendered prompt
-            string pattern = @"<(user|system|assistant)>(.*?)<\/\1>";
-            MatchCollection matches = Regex.Matches(renderedPrompt, pattern, RegexOptions.Singleline);
-
-            // Add the chat history to the chat
-            ChatHistory chatMessages = completion.CreateNewChat();
-            foreach (Match match in matches.Cast<Match>())
-            {
-                string role = match.Groups[1].Value;
-                string message = WebUtility.HtmlDecode(match.Groups[2].Value);
-
-                switch(role)
-                {
-                    case "user":
-                        chatMessages.AddUserMessage(message);
-                        break;
-                    case "system":
-                        chatMessages.AddSystemMessage(message);
-                        break;
-                    case "assistant":
-                        chatMessages.AddAssistantMessage(message);
-                        break;
-                }
-            }
-            
-            if (streaming)
-            {
-                ConfiguredCancelableAsyncEnumerable<IChatStreamingResult> completionResults = completion.GetStreamingChatCompletionsAsync(chatMessages, cancellationToken: cancellationToken).ConfigureAwait(false);
-                result = new FunctionResult(this.Name, this.PluginName, ConvertToStrings(completionResults), ConvertToFinalStringAsync(completionResults));
-            }
-            else
-            {
-                IReadOnlyList<IChatResult> completionResults = await completion.GetChatCompletionsAsync(chatMessages, cancellationToken: cancellationToken).ConfigureAwait(false);
-                var modelResults = completionResults.Select(c => c.ModelResult).ToArray();
-                result = new FunctionResult(this.Name, this.PluginName, modelResults[0].GetOpenAIChatResult().Choice.Message.Content);
-                result.Metadata.Add(AIFunctionResultExtensions.ModelResultsMetadataKey, modelResults);
-            }
+            result = await client.GetModelStreamingResultAsync(this.PluginName, this.Name, renderedPrompt);
         }
         else
         {
-            throw new NotImplementedException();
+            result = await client.GetModelResultAsync(this.PluginName, this.Name, renderedPrompt);
         }
 
         return result;
-    }
-
-    private async IAsyncEnumerable<string> ConvertToStrings(ConfiguredCancelableAsyncEnumerable<IChatStreamingResult> completionResults)
-    {
-        await foreach (var result in completionResults)
-        {
-            await foreach (var message in result.GetStreamingChatMessageAsync())
-            {
-                yield return message.Content;
-            }
-        }
-    }
-
-    private async Task<string> ConvertToFinalStringAsync(ConfiguredCancelableAsyncEnumerable<IChatStreamingResult> completionResults)
-    {
-        string finalString = "";
-        await foreach (var result in completionResults)
-        {
-            await foreach (var message in result.GetStreamingChatMessageAsync())
-            {
-                finalString += message.Content;
-            }
-        }
-
-        return finalString;
     }
 
     private readonly ILogger _logger;

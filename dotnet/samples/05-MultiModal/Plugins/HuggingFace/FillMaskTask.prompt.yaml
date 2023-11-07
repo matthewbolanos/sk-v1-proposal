@@ -1,0 +1,18 @@
+name: GroundedChat
+template: |
+  {{#message role="user"}}
+  The answer to the universe is [MASK].
+  {{/message}}
+
+  {{#message role="system"}}
+  What is the most likely word to fill in the blank?
+  {{/message}}
+template_format: handlebars
+description: A function that gets uses the chat history to respond to the user.
+input_variables:
+output_variable:
+    type: string
+    description: The top prediction from the model.
+execution_settings:
+  - model_id_pattern: ^gpt-3\.?5-turbo
+  - model_id_pattern: ^bert-base-uncased
