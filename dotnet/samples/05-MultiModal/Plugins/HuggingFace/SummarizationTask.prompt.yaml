@@ -14,5 +14,5 @@ output_variable:
     type: string
     description: The top prediction from the model.
 execution_settings:
-  - model_id_pattern: ^gpt-3\.?5-turbo
   - model_id_pattern: ^facebook/bart-large-cnn
+  - model_id_pattern: ^gpt-3\.?5-turbo
