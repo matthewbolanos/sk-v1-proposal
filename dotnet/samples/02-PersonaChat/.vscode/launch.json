@@ -9,7 +9,7 @@
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build",
-            "program": "${workspaceFolder}/bin/Debug/net6.0/02-PersonaChat.dll",
+            "program": "${workspaceFolder}/bin/Debug/net7.0/02-PersonaChat.dll",
             "args": [],
             "cwd": "${workspaceFolder}",
             "console": "integratedTerminal",

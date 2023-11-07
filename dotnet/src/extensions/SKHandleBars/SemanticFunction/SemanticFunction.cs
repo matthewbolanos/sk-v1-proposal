@@ -165,47 +165,11 @@ public sealed class SemanticFunction : ISKFunction, IDisposable
 
         // Render the prompt
         string renderedPrompt = await kernel.PromptTemplateEngine.RenderAsync(kernel, PromptTemplate, variables, cancellationToken);
-
-        if(client is IChatCompletion completion)
+        renderedPrompt = "<request>" + renderedPrompt + "</request>";
+  
+        if (streaming)
         {
-
-            // Extract the chat history from the rendered prompt
-            string pattern = @"<(user|system|assistant)>(.*?)<\/\1>";
-            MatchCollection matches = Regex.Matches(renderedPrompt, pattern, RegexOptions.Singleline);
-
-            // Add the chat history to the chat
-            ChatHistory chatMessages = completion.CreateNewChat();
-            foreach (Match match in matches.Cast<Match>())
-            {
-                string role = match.Groups[1].Value;
-                string message = WebUtility.HtmlDecode(match.Groups[2].Value);
-
-                switch(role)
-                {
-                    case "user":
-                        chatMessages.AddUserMessage(message);
-                        break;
-                    case "system":
-                        chatMessages.AddSystemMessage(message);
-                        break;
-                    case "assistant":
-                        chatMessages.AddAssistantMessage(message);
-                        break;
-                }
-            }
-            
-            if (streaming)
-            {
-                ConfiguredCancelableAsyncEnumerable<IChatStreamingResult> completionResults = completion.GetStreamingChatCompletionsAsync(chatMessages, cancellationToken: cancellationToken).ConfigureAwait(false);
-                result = new FunctionResult(this.Name, this.PluginName, ConvertToStrings(completionResults), ConvertToFinalStringAsync(completionResults));
-            }
-            else
-            {
-                IReadOnlyList<IChatResult> completionResults = await completion.GetChatCompletionsAsync(chatMessages, cancellationToken: cancellationToken).ConfigureAwait(false);
-                var modelResults = completionResults.Select(c => c.ModelResult).ToArray();
-                result = new FunctionResult(this.Name, this.PluginName, modelResults[0].GetOpenAIChatResult().Choice.Message.Content);
-                result.Metadata.Add(AIFunctionResultExtensions.ModelResultsMetadataKey, modelResults);
-            }
+            result = await client.GetModelStreamingResultAsync(this.PluginName, this.Name, renderedPrompt);
         }
         else
         {
