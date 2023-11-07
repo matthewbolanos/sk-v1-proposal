@@ -1,12 +1,12 @@
 name: FillMaskTask
 template: |
-  {{#message role="user"}}
+  <message role="user">
   The answer to the universe is [MASK].
-  {{/message}}
+  </message>
 
-  {{#message role="system"}}
+  <message role="system">
   What is the most likely word to fill in the blank?
-  {{/message}}
+  </message>
 template_format: handlebars
 description: A function that guesses what word should replace [MASK].
 input_variables:

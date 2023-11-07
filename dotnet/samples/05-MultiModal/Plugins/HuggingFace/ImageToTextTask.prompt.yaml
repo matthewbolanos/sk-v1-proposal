@@ -1,8 +1,13 @@
 name: ImageToTextTask
 template: |
-  {{#message role="user"}}
-  <img id={{image.id}} />
-  {{/message}}
+  <message role="user">
+  {{set name="image" value=(HuggingFace_TextToImageTask)}}
+  <img src="{{image.Src}}" />
+  </message>
+
+  <message role="system">
+  Describe the image.
+  </message>
 template_format: handlebars
 description: A function that generates a description of an image.
 input_variables:
@@ -10,4 +15,4 @@ output_variable:
     type: string
     description: The text description of the image.
 execution_settings:
-  - model_id_pattern: ^nlpconnect/vit-gpt2-image-captioning
+  - model_id_pattern: ^gpt-4-vision-preview

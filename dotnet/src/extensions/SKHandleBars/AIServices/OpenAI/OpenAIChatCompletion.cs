@@ -1,5 +1,10 @@
 
 
+using System.Net.Http.Headers;
+using System.Net.Mime;
+using System.Text;
+using System.Text.Json;
+using Azure.AI.OpenAI;
 using Microsoft.SemanticKernel.AI;
 using Microsoft.SemanticKernel.AI.ChatCompletion;
 
@@ -9,12 +14,18 @@ public class OpenAIChatCompletion : AIService, IChatCompletion
     private readonly Connectors.AI.OpenAI.ChatCompletion.OpenAIChatCompletion azureChatCompletion;
     private readonly ModelRequestXmlConverter modelRequestXmlConverter = new();
 
+    private readonly HttpClient httpClient = new HttpClient();
+
+    private const string endpoint = "https://api.openai.com/v1/chat/completions";
+
     public OpenAIChatCompletion(string modelId, string apiKey): base(modelId)
     {
         this.azureChatCompletion = new Connectors.AI.OpenAI.ChatCompletion.OpenAIChatCompletion(
             modelId,
             apiKey
         );
+
+        httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
     }
 
     public ChatHistory CreateNewChat(string? instructions = null)
@@ -34,22 +45,19 @@ public class OpenAIChatCompletion : AIService, IChatCompletion
 
     public async override Task<FunctionResult> GetModelResultAsync(string pluginName, string name, string prompt, Dictionary<object, BinaryFile>? files = default)
     {
-        ChatHistory chatHistory = this.ChatHistoryFromPrompt(prompt);
+        StringContent chatHistory = this.ChatHistoryFromPrompt(prompt);
 
-        var completionResults =  await this.GetChatCompletionsAsync(chatHistory).ConfigureAwait(false);
-        var modelResults = completionResults.Select(c => c.ModelResult).ToArray();
-        var result = new FunctionResult(name, pluginName, modelResults[0].GetOpenAIChatResult().Choice.Message.Content);
-        result.Metadata.Add(AIFunctionResultExtensions.ModelResultsMetadataKey, modelResults);
+        var completionResults = await (await httpClient.PostAsync(endpoint, chatHistory)).Content.ReadAsStringAsync();
+        var deserializedResults = JsonSerializer.Deserialize<OpenAIChatResponse>(completionResults);
+        var result = new FunctionResult(name, pluginName, deserializedResults.Choices[0].Message.Content);
+        result.Metadata.Add(AIFunctionResultExtensions.ModelResultsMetadataKey, deserializedResults);
 
         return result;
     }
 
     public async override Task<FunctionResult> GetModelStreamingResultAsync(string pluginName, string name, string prompt, Dictionary<object, BinaryFile>? files = default)
     {
-        ChatHistory chatHistory = this.ChatHistoryFromPrompt(prompt);
-
-        IAsyncEnumerable<IChatStreamingResult> completionResults = this.GetStreamingChatCompletionsAsync(chatHistory);
-        return new FunctionResult(name, pluginName, ConvertToStrings(completionResults), ConvertToFinalStringAsync(completionResults));
+        throw new NotImplementedException();
     }
 
     public override List<Type> OutputTypes()
@@ -93,11 +101,12 @@ public class OpenAIChatCompletion : AIService, IChatCompletion
         return finalString;
     }
 
-    private ChatHistory ChatHistoryFromPrompt(string prompt)
+    private StringContent ChatHistoryFromPrompt(string prompt)
     {
         ModelRequest modelRequest = modelRequestXmlConverter.ParseXml(prompt);
 
-        ChatHistory chatHistory = this.CreateNewChat();
+        List<object> messages = new();
+
         foreach(ModelMessage modelMessage in modelRequest.Messages!)
         {
             AuthorRole authorRole = modelMessage.Role.ToLower() switch
@@ -108,11 +117,51 @@ public class OpenAIChatCompletion : AIService, IChatCompletion
                 "function" => AuthorRole.System,
                 _ => throw new NotImplementedException()
             };
+
+            List<object> messageContent = new();
             if (modelMessage.Content is MessageParts contentArray)
             {
-                chatHistory.AddMessage(authorRole, contentArray[0].ToString()!);
+                foreach (var content in contentArray)
+                {
+                    if(content is string textContent)
+                    {
+                        messageContent.Append(new
+                        {
+                            type = "text",
+                            text = textContent
+                        });
+                    }
+                    else if (content is ImageContent imageContent)
+                    {
+                        messageContent.Add(new
+                        {
+                            type = "image_url",
+                            image_url = new
+                            {
+                                url = imageContent.GetSrc()
+                            }
+                        });
+                    }
+                }
             }
+
+            messages.Add(new
+            {
+                role = authorRole.ToString().ToLower(),
+                content = messageContent
+            });
         }
-        return chatHistory;
+
+        // Construct the request body.
+        var request = JsonSerializer.Serialize(new
+        {
+            model = this.ModelId,
+            messages = messages,
+            max_tokens = 1000,
+        });
+
+        return new StringContent(request,
+            Encoding.UTF8,
+            MediaTypeNames.Application.Json);
     }
 }

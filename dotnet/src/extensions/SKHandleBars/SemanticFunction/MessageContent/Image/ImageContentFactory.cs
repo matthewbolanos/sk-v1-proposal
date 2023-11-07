@@ -11,7 +11,7 @@ public class ImageContentFactory : IMessageContentFactory
         {
             XmlElement element = (XmlElement)node;
             string src = element.GetAttribute("src");
-            messageContent = new ImageContent(new (src));
+            messageContent = new ImageContent(src);
         } else
         {
             throw new NotImplementedException();

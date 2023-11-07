@@ -14,7 +14,6 @@ public abstract class BinaryFile
     public string? ContentType { get; set; }
 
     public byte[]? Bytes { get; set;}
-
 }
 
 

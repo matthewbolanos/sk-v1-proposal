@@ -12,6 +12,12 @@ public sealed class Image : BinaryFile
     public override string ToString() {
         return $"Image: {ContentType} ({Bytes?.Length} bytes)";
     }
+
+    public string Src { 
+        get {
+            return $"data:{ContentType};base64,{Convert.ToBase64String(Bytes)}";
+        }
+    }
 }
 
 

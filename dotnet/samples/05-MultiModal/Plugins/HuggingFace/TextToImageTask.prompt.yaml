@@ -1,8 +1,8 @@
 name: TextToImageTask
 template: |
-  {{#message role="user"}}
+  <message role="user">
   Astronaut riding a horse.
-  {{/message}}
+  </message>
 template_format: handlebars
 description: A function that asks a model to create an image.
 input_variables:

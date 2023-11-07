@@ -1,8 +1,8 @@
 name: QuestionAnsweringTask
 template: |
-  {{#message role="user"}}
+  <message role="user">
   What's my name?
-  {{/message}}
+  </message>
 
   <context>
     The user's name is Clara and lives in Berkeley.
