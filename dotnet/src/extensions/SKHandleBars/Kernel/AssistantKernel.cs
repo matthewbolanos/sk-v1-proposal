@@ -33,9 +33,10 @@ public class AssistantKernel : IKernel, IPlugin
 
 	private readonly string apiKey;
 
+	private readonly string model;
+
 	public static AssistantKernel FromConfiguration(
 		string configurationFile,
-		string apiKey,
 		List<IAIService>? aiServices = null,
 		List<IPlugin>? plugins = null,
 		List<IPromptTemplateEngine>? promptTemplateEngines = null
@@ -46,26 +47,15 @@ public class AssistantKernel : IKernel, IPlugin
         var deserializer = new DeserializerBuilder()
             .WithTypeConverter(new ExecutionSettingsModelConverter())
             .Build();
-
         AssistantKernelModel assistantKernelModel = deserializer.Deserialize<AssistantKernelModel>(yamlContent);
-
-		// Check if there are any promptTemplateEngines provided
-		if (promptTemplateEngines == null)
-		{
-			promptTemplateEngines = new List<IPromptTemplateEngine>(){
-				new HandlebarsPromptTemplateEngine()
-			};
-		}
 
 		return new AssistantKernel(
 			assistantKernelModel.Name,
 			assistantKernelModel.Description,
 			assistantKernelModel.Template,
-			apiKey,
 			aiServices,
 			plugins,
-			promptTemplateEngines,
-			promptTemplateEngines[0]
+			promptTemplateEngines
 		);
 	}
 
@@ -73,18 +63,20 @@ public class AssistantKernel : IKernel, IPlugin
 		string name,
 		string? description,
 		string? instructions,
-		string apiKey,
 		List<IAIService>? aiServices = null,
 		List<IPlugin>? plugins = null,
-		List<IPromptTemplateEngine>? promptTemplateEngines = null,
-		IPromptTemplateEngine? instructionsTemplateEngine = null
+		List<IPromptTemplateEngine>? promptTemplateEngines = null
 	)
 	{
 		this.Name = name;
 		this.Description = description;
 		this.Instructions = instructions;
-		this.apiKey = apiKey;
-
+		this.AIServices = aiServices;
+		
+		// Grab the first AI service for the apiKey and model for the Assistants API
+		this.apiKey = ((OpenAIChatCompletion)this.AIServices[0]).ApiKey;
+		this.model = ((OpenAIChatCompletion)this.AIServices[0]).ModelId;
+		
 		// Create a function collection using the plugins
 		FunctionCollection functionCollection = new FunctionCollection();
 		this.plugins = plugins ?? new List<IPlugin>();
@@ -101,9 +93,7 @@ public class AssistantKernel : IKernel, IPlugin
 
 		// Create an AI service provider using the AI services
 		AIServiceCollection services = new AIServiceCollection();
-		Dictionary<Type, string> defaultIds = new(){
-			{ typeof(IAIService), "gpt-35-turbo" }
-		};
+		Dictionary<Type, string> defaultIds = new(){};
 
 		if (aiServices != null)
 		{
@@ -115,7 +105,8 @@ public class AssistantKernel : IKernel, IPlugin
 				}
 			}
 		}
-
+		
+		// Initialize the prompt template engine
 		IPromptTemplateEngine promptTemplateEngine;
 		if (promptTemplateEngines != null && promptTemplateEngines.Count > 0)
 		{
@@ -126,8 +117,7 @@ public class AssistantKernel : IKernel, IPlugin
 			promptTemplateEngine = new HandlebarsPromptTemplateEngine();
 		}
 
-		this.AIServices = aiServices;
-
+		// Create underlying kernel
 		this.kernel = new SemanticKernel.Kernel(
 			functionCollection,
 			services.Build(),
@@ -138,112 +128,18 @@ public class AssistantKernel : IKernel, IPlugin
 		);
 	}
 
-	public async Task<FunctionResult> RunAsync(IThread thread)
+	public async Task<FunctionResult> RunAsync(
+		IThread thread,
+		Dictionary<string, object?> variables = default,
+		bool streaming = false,
+		CancellationToken cancellationToken = default
+	)
 	{
-		await InitializeAgent();
+		// Initialize the agent if it doesn't exist
+		await InitializeAgentAsync();
 
-		var requestData = new
-		{
-			assistant_id = this.Id,
-			instructions = this.Instructions
-		};
-
-		string url = "https://api.openai.com/v1/threads/"+thread.Id+"/runs";
-        using var httpRequestMessage = HttpRequest.CreatePostRequest(url, requestData);
-
-        httpRequestMessage.Headers.Add("Authorization", $"Bearer {this.apiKey}");
-        httpRequestMessage.Headers.Add("OpenAI-Beta", "assistants=v1");
-
-        var response = await this.client.SendAsync(httpRequestMessage).ConfigureAwait(false);
-
-		string responseBody = await response.Content.ReadAsStringAsync();
-		ThreadRunModel threadRunModel = JsonSerializer.Deserialize<ThreadRunModel>(responseBody);
-
-		// poll the run until it is complete
-		while (threadRunModel.Status == "queued" || threadRunModel.Status == "in_progress")
-		{
-			// add a delay
-			await Task.Delay(300);
-
-			url = "https://api.openai.com/v1/threads/"+thread.Id+"/runs/"+threadRunModel.Id;
-			using var httpRequestMessage2 = HttpRequest.CreateGetRequest(url);
-
-			httpRequestMessage2.Headers.Add("Authorization", $"Bearer {this.apiKey}");
-			httpRequestMessage2.Headers.Add("OpenAI-Beta", "assistants=v1");
-
-			response = await this.client.SendAsync(httpRequestMessage2).ConfigureAwait(false);
-
-			responseBody = await response.Content.ReadAsStringAsync();
-			try {
-				threadRunModel = JsonSerializer.Deserialize<ThreadRunModel>(responseBody);
-			} catch (Exception e) {
-				Console.WriteLine(responseBody);
-				throw e;
-			}
-		}
-
-		if (threadRunModel.Status == "failed")
-		{
-			return new FunctionResult(this.Name, "Ask", new List<ModelMessage>(){
-				{ new ModelMessage(threadRunModel.LastError.Message) }
-			});
-		}
-
-		// get the steps
-		ThreadRunStepListModel threadRunSteps = await GetThreadRunSteps(thread.Id, threadRunModel.Id);
-
-		// check step details
-		List<ModelMessage> messages = new List<ModelMessage>();
-		foreach(ThreadRunStepModel threadRunStep in threadRunSteps.Data)
-		{
-			if (threadRunStep.StepDetails.Type == "message_creation")
-			{
-				// Get message Id
-				var messageId = threadRunStep.StepDetails.MessageCreation.MessageId;
-				ModelMessage message = await thread.RetrieveMessageAsync(messageId);
-				messages.Add(message);
-			}
-		}
-				
-		return new FunctionResult(this.Name, "Ask", messages);
-	}
-
-	private async Task<ThreadRunStepListModel> GetThreadRunSteps(string threadId, string runId)
-	{
-		string url = "https://api.openai.com/v1/threads/"+threadId+"/runs/"+runId+"/steps";
-        using var httpRequestMessage = HttpRequest.CreateGetRequest(url);
-
-        httpRequestMessage.Headers.Add("Authorization", $"Bearer {this.apiKey}");
-        httpRequestMessage.Headers.Add("OpenAI-Beta", "assistants=v1");
-
-        var response = await this.client.SendAsync(httpRequestMessage).ConfigureAwait(false);
-
-		string responseBody = await response.Content.ReadAsStringAsync();
-		return JsonSerializer.Deserialize<ThreadRunStepListModel>(responseBody);
-	}
-
-	private async Task InitializeAgent()
-	{
-		// Create new agent if it doesn't exist
-		if (Id == null)
-		{
-			var requestData = new
-			{
-				model = ((AIService)this.AIServices[0]).ModelId
-			};
-
-			string url = "https://api.openai.com/v1/assistants";
-        	using var httpRequestMessage = HttpRequest.CreatePostRequest(url, requestData);
-
-			httpRequestMessage.Headers.Add("Authorization", $"Bearer {this.apiKey}");
-			httpRequestMessage.Headers.Add("OpenAI-Beta", "assistants=v1");
-
-       		using var response = await this.client.SendAsync(httpRequestMessage).ConfigureAwait(false);
-
-			string responseBody = await response.Content.ReadAsStringAsync();
-			AssistantModel assistantModel = JsonSerializer.Deserialize<AssistantModel>(responseBody);
-			this.Id = assistantModel.Id;
-		}
+		// Invoke the thread
+		return await thread.InvokeAsync(this, variables, streaming, cancellationToken);
 	}
 
 	public List<FunctionView> GetFunctionViews()
@@ -267,20 +163,18 @@ public class AssistantKernel : IKernel, IPlugin
 		return functionViews;
 	}
 
-	public async Task<IThread> CreateThread()
+	public async Task<IThread> CreateThreadAsync()
 	{
 		string url = "https://api.openai.com/v1/threads";
 		using var httpRequestMessage = HttpRequest.CreatePostRequest(url);
-
 		httpRequestMessage.Headers.Add("Authorization", $"Bearer {this.apiKey}");
 		httpRequestMessage.Headers.Add("OpenAI-Beta", "assistants=v1");
-
 		using var response = await this.client.SendAsync(httpRequestMessage).ConfigureAwait(false);
-
 		string responseBody = await response.Content.ReadAsStringAsync();
 		ThreadModel threadModel = JsonSerializer.Deserialize<ThreadModel>(responseBody);
 		return new OpenAIThread(threadModel.Id, apiKey, this);
 	}
+	
 
 	public ISKFunction RegisterCustomFunction(ISKFunction customFunction)
 	{
@@ -302,6 +196,31 @@ public class AssistantKernel : IKernel, IPlugin
 	{
 		return this.AIServices;
 	}
+
+	private async Task InitializeAgentAsync()
+	{
+		// Create new agent if it doesn't exist
+		if (Id == null)
+		{
+			var requestData = new
+			{
+				model = ((AIService)this.AIServices[0]).ModelId
+			};
+
+			string url = "https://api.openai.com/v1/assistants";
+        	using var httpRequestMessage = HttpRequest.CreatePostRequest(url, requestData);
+
+			httpRequestMessage.Headers.Add("Authorization", $"Bearer {this.apiKey}");
+			httpRequestMessage.Headers.Add("OpenAI-Beta", "assistants=v1");
+
+       		using var response = await this.client.SendAsync(httpRequestMessage).ConfigureAwait(false);
+			string responseBody = await response.Content.ReadAsStringAsync();
+			AssistantModel assistantModel = JsonSerializer.Deserialize<AssistantModel>(responseBody)!;
+			this.Id = assistantModel.Id;
+		}
+	}
+
+	
 
 	public IPromptTemplateEngine PromptTemplateEngine => this.kernel.PromptTemplateEngine;
 

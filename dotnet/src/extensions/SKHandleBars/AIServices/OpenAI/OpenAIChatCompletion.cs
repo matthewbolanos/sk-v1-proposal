@@ -18,8 +18,12 @@ public class OpenAIChatCompletion : AIService, IChatCompletion
 
     private const string endpoint = "https://api.openai.com/v1/chat/completions";
 
+    internal string ApiKey;
+
     public OpenAIChatCompletion(string modelId, string apiKey): base(modelId)
     {
+        this.ApiKey = apiKey;
+
         this.azureChatCompletion = new Connectors.AI.OpenAI.ChatCompletion.OpenAIChatCompletion(
             modelId,
             apiKey

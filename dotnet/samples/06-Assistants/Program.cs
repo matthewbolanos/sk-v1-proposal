@@ -6,20 +6,12 @@ using IKernel = Microsoft.SemanticKernel.IKernel;
 using System.Text.Json;
 using Microsoft.SemanticKernel.AI;
 
-string Gpt35TurboDeploymentName = Env.Var("AzureOpenAI:Gpt35TurboDeploymentName")!;
-string AzureOpenAIEndpoint = Env.Var("AzureOpenAI:Endpoint")!;
-string AzureOpenAIApiKey = Env.Var("AzureOpenAI:ApiKey")!;
-string HuggingFaceApiKey = Env.Var("HuggingFace:ApiKey")!;
-string huggingFaceFillMaskTaskEndpoint = Env.Var("HuggingFace:FillMaskTaskEndpoint")!;
-string huggingFaceQuestionAnsweringTaskEndpoint = Env.Var("HuggingFace:QuestionAnsweringTaskEndpoint")!;
-string huggingFaceSummarizationTaskEndpoint = Env.Var("HuggingFace:SummarizationTaskEndpoint")!;
-string huggingFaceTextToImageTaskEndpoint = Env.Var("HuggingFace:TextToImageTaskEndpoint")!;
 string OpenAIApiKey = Env.Var("OpenAI:ApiKey")!;
 string BingApiKey = Env.Var("Bing:ApiKey")!;
 string currentDirectory = Directory.GetCurrentDirectory();
 
 // Initialize the required functions and services for the kernel
-IChatCompletion gpt35Turbo = new AzureOpenAIChatCompletion("gpt-3.5-turbo", AzureOpenAIEndpoint, AzureOpenAIApiKey, Gpt35TurboDeploymentName);
+IChatCompletion gpt35Turbo = new OpenAIChatCompletion("gpt-3.5-turbo", OpenAIApiKey);
 IChatCompletion gpt4Vision = new OpenAIChatCompletion("gpt-4-vision-preview", OpenAIApiKey);
 
 // Create plugins
@@ -37,7 +29,6 @@ IPlugin searchPlugin = new Plugin(
 // Create a researcher
 IPlugin researcher = AssistantKernel.FromConfiguration(
     currentDirectory + "/Assistants/Researcher.agent.yaml",
-    OpenAIApiKey,
     aiServices: new () { gpt35Turbo },
     plugins: new () { searchPlugin }
 );
@@ -45,7 +36,6 @@ IPlugin researcher = AssistantKernel.FromConfiguration(
 // Create a mathmatician
 IPlugin mathmatician = AssistantKernel.FromConfiguration(
     currentDirectory + "/Assistants/Mathmatician.agent.yaml",
-    OpenAIApiKey,
     aiServices: new () { gpt4Vision },
     plugins: new () { mathPlugin }
 );
@@ -53,22 +43,26 @@ IPlugin mathmatician = AssistantKernel.FromConfiguration(
 // Create a designer
 IPlugin designer = AssistantKernel.FromConfiguration(
     currentDirectory + "/Assistants/Designer.agent.yaml",
-    OpenAIApiKey,
     aiServices: new () { gpt4Vision }
 );
 
 // Create a Project Manager
 AssistantKernel projectManager = AssistantKernel.FromConfiguration(
     currentDirectory + "/Assistants/ProjectManager.agent.yaml",
-    OpenAIApiKey,
     aiServices: new () { gpt35Turbo },
     plugins: new () { researcher, mathmatician, designer }
 );
 
-IThread thread = await projectManager.CreateThread();
+IThread thread = await projectManager.CreateThreadAsync();
 while(true) {
+    // Get user input
     Console.Write("User > ");
-    var result = await thread.SendUserMessageAsync(Console.ReadLine());
+    thread.AddUserMessageAsync(Console.ReadLine());
+
+    // Run the thread using the project manager kernel
+    var result = await projectManager.RunAsync(thread);
+
+    // Print the results
     var messages = result.GetValue<List<ModelMessage>>();
     foreach(ModelMessage message in messages)
     {

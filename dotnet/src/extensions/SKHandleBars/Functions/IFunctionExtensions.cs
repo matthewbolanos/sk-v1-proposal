@@ -20,6 +20,10 @@ public static class HandlebarsIFunctionExtensions
         {
             return await nativeFunction.InvokeAsync(kernel, variables: variables, cancellationToken: cancellationToken,  streaming: streaming);
         }
+        if (function is OpenAIThread openAIThread)
+        {
+            return await openAIThread.InvokeAsync(kernel, variables: variables, cancellationToken: cancellationToken,  streaming: streaming);
+        }
         
         throw new Exception("Function is not supported.");
     }
