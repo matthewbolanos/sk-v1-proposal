@@ -2,6 +2,9 @@
 
 using System.Reflection;
 using System.Text.RegularExpressions;
+using Microsoft.SemanticKernel.AI;
+using Microsoft.SemanticKernel.Connectors.AI.OpenAI.AzureSdk;
+using Microsoft.SemanticKernel.Orchestration;
 
 namespace Microsoft.SemanticKernel.Handlebars;
 
@@ -74,23 +77,48 @@ public sealed class HandlebarsPlanner
             }
         );
 
-        Match match = Regex.Match(result.GetValue<string>()!, @"```\s*(handlebars)?\s+(.*?)\s+```", RegexOptions.Singleline);
-
-        string template;
-        if (match.Success)
+        List<string> templates = new();
+        result.TryGetMetadataValue(AIFunctionResultExtensions.ModelResultsMetadataKey, out IEnumerable<ModelResult> results);
+        foreach(ModelResult modelResult in results)
         {
-            template = match.Groups[2].Value;
+            string template = modelResult.GetResult<ChatModelResult>().Choice.Message.Content!;
+            
+            // Loop over all the functions and replace "." with "_"
+            foreach (var function in functions)
+            {
+                // Replace without case sensitivity
+                template = Regex.Replace(template, $"{function.PluginName}.{function.Name}", $"{function.PluginName}_{function.Name}", RegexOptions.IgnoreCase);
+            }
+
+            template = template.Replace($"compare.equal", $"equal");
+            template = template.Replace($"compare.lessThan", $"lessThan");
+            template = template.Replace($"compare.greaterThan", $"greaterThan");
+            template = template.Replace($"compare.lessThanOrEqual", $"lessThanOrEqual");
+            template = template.Replace($"compare.greaterThanOrEqual", $"greaterThanOrEqual");
+            template = template.Replace($"compare.greaterThanOrEqual", $"greaterThanOrEqual");
+
+            template = MinifyHandlebarsTemplate(template);
+
+            // template = template.Replace("#set", "set");
+            // template = template.Replace("{{Guess:", "{{! Guess:");
+
+            templates.Add(template);
         }
-        else
+
+        return new HandlebarsPlan(Kernel, templates);
+    }
+    static string MinifyHandlebarsTemplate(string template)
+    {
+        // This regex pattern matches '{{', then any characters including newlines (non-greedy), then '}}'
+        string pattern = @"(\{\{[\s\S]*?}})";
+
+        // Replace all occurrences of the pattern in the input template
+        return Regex.Replace(template, pattern, m =>
         {
-            template = result.GetValue<string>()!;
-        }
-
-        template = template.Replace("#set", "set");
-        template = template.Replace("{{Guess:", "{{! Guess:");
-        
-
-        return new HandlebarsPlan(Kernel, template);
+            // For each match, remove the whitespace within the handlebars, except for spaces
+            // that separate different items (e.g., 'json' and '(get')
+            return Regex.Replace(m.Value, @"\s+", " ").Replace(" {", "{").Replace(" }", "}").Replace(" )", ")");
+        });
     }
 }
 

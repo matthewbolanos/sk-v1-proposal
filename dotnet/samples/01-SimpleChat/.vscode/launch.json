@@ -9,7 +9,7 @@
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build",
-            "program": "${workspaceFolder}/bin/Debug/net6.0/01-SimpleChat.dll",
+            "program": "${workspaceFolder}/bin/Debug/net7.0/01-SimpleChat.dll",
             "args": [],
             "cwd": "${workspaceFolder}",
             "console": "integratedTerminal",

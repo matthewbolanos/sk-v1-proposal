@@ -9,7 +9,7 @@
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build",
-            "program": "${workspaceFolder}/bin/Debug/net6.0/03-SimpleRag.dll",
+            "program": "${workspaceFolder}/bin/Debug/net7.0/03-SimpleRag.dll",
             "args": [],
             "cwd": "${workspaceFolder}",
             "console": "integratedTerminal",

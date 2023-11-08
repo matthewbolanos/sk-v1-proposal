@@ -36,7 +36,6 @@ public class HandlebarsPromptTemplateEngine : IPromptTemplateEngine
         var compiledTemplate = handlebarsInstance.Compile(template);
         return compiledTemplate(variables);
     }
-    
 
     private void RegisterFunctionAsHelper(IKernel kernel, IHandlebars handlebarsInstance, FunctionView functionView, Dictionary<string,object?> variables, CancellationToken cancellationToken = default)
     {
@@ -132,6 +131,18 @@ public class HandlebarsPromptTemplateEngine : IPromptTemplateEngine
         {
             // convert all the arguments to an array
             var array = arguments.Select(a => a).ToList();
+
+            return array;
+        });
+        handlebarsInstance.RegisterHelper("range", (in HelperOptions options, in Context context, in Arguments arguments) => 
+        {
+            var start = int.Parse(arguments[0].ToString());
+            var end = int.Parse(arguments[1].ToString());
+
+            var count = end-start;
+
+            // create array from start to end
+            var array = Enumerable.Range(start, count).Select(i => (object)i).ToList();
 
             return array;
         });
@@ -239,20 +250,68 @@ public class HandlebarsPromptTemplateEngine : IPromptTemplateEngine
             options.Template(writer, null);
         });
 
+        handlebarsInstance.RegisterHelper("doubleOpen", (writer, context, arguments) => {
+            writer.Write("{{");
+        });
+
+        handlebarsInstance.RegisterHelper("doubleClose", (writer, context, arguments) => {
+            writer.Write("}}");
+        });
+
+        handlebarsInstance.RegisterHelper("toCamelCase", (writer, context, arguments) => {
+            var str = arguments[0].ToString()!;
+
+            if ( !string.IsNullOrEmpty(str) && char.IsUpper(str[0])) {
+                writer.Write(str.Length == 1 ? char.ToLower(str[0]).ToString() : char.ToLower(str[0]) + str[1..]);
+            }
+        });
+
+
         handlebarsInstance.RegisterHelper("set", (writer, context, arguments) => 
         {
-            // Get the parameters from the template arguments
-            var parameters = arguments[0] as IDictionary<string, object>;
-
-            if (variables.ContainsKey((string)parameters!["name"]))
+            if (arguments[0].GetType() == typeof(HashParameterDictionary))
             {
-                variables[(string)parameters!["name"]] = parameters!["value"];
+                // Get the parameters from the template arguments
+                var parameters = arguments[0] as IDictionary<string, object>;
+
+                if (variables.ContainsKey((string)parameters!["name"]))
+                {
+                    variables[(string)parameters!["name"]] = parameters!["value"];
+                }
+                else
+                {
+                    variables.Add((string)parameters!["name"], parameters!["value"]);
+                }
+                // writer.Write((string)parameters!["name"] + " = " + parameters!["value"]);
             }
             else
             {
-                variables.Add((string)parameters!["name"], parameters!["value"]);
+                var name = arguments[0].ToString();
+                var value = arguments[1];
+
+                if (variables.ContainsKey(name))
+                {
+                    variables[name] = value;
+                }
+                else
+                {
+                    variables.Add(name, value);
+                }
+                // writer.Write(name + " = " + value);
             }
-            // writer.Write("The "+parameters!["name"]+" variable has been set to "+parameters!["value"]+".");
+        });
+
+        handlebarsInstance.RegisterHelper("get", (in HelperOptions options, in Context context, in Arguments arguments) => 
+        {
+            if (arguments[0].GetType() == typeof(HashParameterDictionary))
+            {
+                var parameters = arguments[0] as IDictionary<string, object>;
+                return variables[(string)parameters!["name"]];
+            }
+            else
+            {
+                return variables[arguments[0].ToString()];
+            }
         });
     }
 
@@ -309,7 +368,7 @@ public class HandlebarsPromptTemplateEngine : IPromptTemplateEngine
         }
         else
         {
-            throw new Exception($"Invalid parameter type for operator. Parameters must be of type int, double, or decimal.");
+            return double.Parse(number!.ToString()!);
         }
     }
 
