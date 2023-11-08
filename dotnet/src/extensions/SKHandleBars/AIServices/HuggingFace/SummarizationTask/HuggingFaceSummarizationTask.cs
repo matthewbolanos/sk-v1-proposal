@@ -33,7 +33,7 @@ public sealed class HuggingFaceSummarizationTask : AIService
         this._endpoint = endpoint;
     }
 
-    public async override Task<FunctionResult> GetModelResultAsync(string pluginName, string name, string prompt, Dictionary<object, BinaryFile>? files = default)
+    public async override Task<FunctionResult> GetModelResultAsync(IKernel kernel, string pluginName, string name, string prompt, Dictionary<object, BinaryFile>? files = default)
     {
         ModelRequest modelRequest = modelRequestXmlConverter.ParseXml(prompt);
 
@@ -54,7 +54,7 @@ public sealed class HuggingFaceSummarizationTask : AIService
         return result;
     }
 
-    public override Task<FunctionResult> GetModelStreamingResultAsync(string pluginName, string name, string prompt, Dictionary<object, BinaryFile>? files = default)
+    public override Task<FunctionResult> GetModelStreamingResultAsync(IKernel kernel, string pluginName, string name, string prompt, Dictionary<object, BinaryFile>? files = default)
     {
         throw new NotImplementedException();
     }

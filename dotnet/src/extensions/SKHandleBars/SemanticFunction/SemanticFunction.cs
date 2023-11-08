@@ -8,6 +8,11 @@ using YamlDotNet.Serialization;
 using System.Text.RegularExpressions;
 using System.Runtime.CompilerServices;
 using System.Net;
+using Azure.AI.OpenAI;
+using Microsoft.SemanticKernel.Connectors.AI.OpenAI.AzureSdk;
+using Microsoft.SemanticKernel.Connectors.AI.OpenAI;
+using System.Text.Json;
+using Microsoft.SemanticKernel.AI.ChatCompletion;
 
 namespace Microsoft.SemanticKernel.Handlebars;
 
@@ -111,11 +116,11 @@ public sealed class SemanticFunction : ISKFunction, IDisposable
 
     }
 
-    public FunctionView Describe()
+    public FunctionView Describe(string pluginName = "")
     {   
         return new FunctionView(
             this.Name,
-            this.PluginName,
+            pluginName,
             this.Description,
             this.InputParameters
         );
@@ -161,6 +166,8 @@ public sealed class SemanticFunction : ISKFunction, IDisposable
 
         client ??= (AIService)((Kernel)kernel).GetDefaultService();
 
+        variables["functions"] = ((Kernel)kernel).GetFunctionViews();
+
         FunctionResult result;
 
         // Render the prompt
@@ -169,14 +176,40 @@ public sealed class SemanticFunction : ISKFunction, IDisposable
   
         if (streaming)
         {
-            result = await client.GetModelStreamingResultAsync(this.PluginName, this.Name, renderedPrompt);
+            result = await client.GetModelStreamingResultAsync(kernel, this.PluginName, this.Name, renderedPrompt);
         }
         else
         {
-            result = await client.GetModelResultAsync(this.PluginName, this.Name, renderedPrompt);
+            result = await client.GetModelResultAsync(kernel, this.PluginName, this.Name, renderedPrompt);
         }
 
         return result;
+    }
+
+    private async Task<FunctionResult> InvokeFunctionCall(IKernel kernel, string name, string arguments, IChatCompletion completion, ChatHistory chatMessages)
+    {
+        // split name
+        string[] nameParts = name.Split("-");
+
+        // get function from kernel
+        var function = kernel.Functions.GetFunction(nameParts[0], nameParts[1]);
+        // TODO: change back to Dictionary<string, object>
+        Dictionary<string, object> variables = JsonSerializer.Deserialize<Dictionary<string, object>>(arguments)!;
+
+        var results = await kernel.RunAsync(
+            function,
+            variables: variables!
+        );
+
+        // temporarily add results as system message to chat history
+        chatMessages.AddSystemMessage("Here is some grounding information:\n"+results.GetValue<string>());
+
+        IReadOnlyList<IChatResult> completionResults = await completion.GetChatCompletionsAsync(chatMessages).ConfigureAwait(false);
+        var modelResults = completionResults.Select(c => c.ModelResult).ToArray();
+        // remove from chat history to put it back to normal
+        chatMessages.RemoveAt(chatMessages.Count()-1);
+
+        return new FunctionResult(this.Name, this.PluginName, modelResults[0].GetOpenAIChatResult().Choice.Message.Content);;
     }
 
     private readonly ILogger _logger;
