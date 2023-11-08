@@ -27,13 +27,17 @@ public class AssistantKernel : IKernel, IPlugin
 
     public string? Instructions { get; }
 
-    IEnumerable<ISKFunction> IPlugin.Functions => this.plugins.SelectMany(plugin => plugin.Functions);
+    IEnumerable<ISKFunction> IPlugin.Functions {
+		get { return this.functions; }
+	}
 
 	private HttpClient client = new HttpClient();
 
 	private readonly string apiKey;
 
 	private readonly string model;
+
+	private readonly List<ISKFunction> functions;
 
 	public static AssistantKernel FromConfiguration(
 		string configurationFile,
@@ -126,6 +130,16 @@ public class AssistantKernel : IKernel, IPlugin
 			NullHttpHandlerFactory.Instance,
 			null
 		);
+
+		// Create functions so other kernels can use this kernel as a plugin
+		this.functions = new List<ISKFunction>
+        {
+            NativeFunction.FromNativeFunction(
+                this.AskAsync,
+                "Ask",
+                this.Description
+            )
+        };
 	}
 
 	public async Task<FunctionResult> RunAsync(
@@ -220,7 +234,51 @@ public class AssistantKernel : IKernel, IPlugin
 		}
 	}
 
-	
+	private async Task<IThread> GetThreadAsync(string threadId)
+	{
+		
+		var requestData = new
+		{
+			thread_id = threadId
+		};
+
+		string url = "https://api.openai.com/v1/threads";
+		using var httpRequestMessage = HttpRequest.CreateGetRequest(url, requestData);
+
+		httpRequestMessage.Headers.Add("Authorization", $"Bearer {this.apiKey}");
+		httpRequestMessage.Headers.Add("OpenAI-Beta", "assistants=v1");
+
+		using var response = await this.client.SendAsync(httpRequestMessage).ConfigureAwait(false);
+		string responseBody = await response.Content.ReadAsStringAsync();
+		var threadModel = JsonSerializer.Deserialize<ThreadModel>(responseBody)!;
+		return new OpenAIThread(threadModel.Id, apiKey, this);
+	}
+
+	private async Task<string> AskAsync(string ask, string? threadId = default)
+	{
+		IThread thread;
+		if (threadId == null)
+		{
+			// Create new thread
+			thread = await CreateThreadAsync();
+		}
+		else
+		{
+			// Retrieve existing thread
+			thread = await GetThreadAsync(threadId);
+		}
+
+		var results = await this.RunAsync(
+			thread,
+			variables: new Dictionary<string, object?>()
+			{
+				{ "ask", ask }
+			}
+		);
+
+		return results.GetValue<string>()!;
+	}
+
 
 	public IPromptTemplateEngine PromptTemplateEngine => this.kernel.PromptTemplateEngine;
 
