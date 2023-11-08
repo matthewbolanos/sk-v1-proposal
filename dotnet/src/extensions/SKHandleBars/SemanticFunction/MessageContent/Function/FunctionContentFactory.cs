@@ -11,7 +11,7 @@ namespace Microsoft.SemanticKernel.Handlebars
             if (node.NodeType == XmlNodeType.Element && node.Name == "function")
             {
                 XmlElement element = (XmlElement)node;
-                string pluginName = element.GetAttribute("PluginName");
+                string pluginName = element.GetAttribute("pluginName");
                 string name = element.GetAttribute("name");
                 messageContent = new FunctionContent(pluginName, name);
             } else

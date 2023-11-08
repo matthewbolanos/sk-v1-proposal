@@ -43,7 +43,7 @@ public class OpenAIChatCompletion : AIService, IChatCompletion
         return this.azureChatCompletion.GetStreamingChatCompletionsAsync(chat, requestSettings, cancellationToken);
     }
 
-    public async override Task<FunctionResult> GetModelResultAsync(string pluginName, string name, string prompt, Dictionary<object, BinaryFile>? files = default)
+    public async override Task<FunctionResult> GetModelResultAsync(IKernel kernel, string pluginName, string name, string prompt, Dictionary<object, BinaryFile>? files = default)
     {
         StringContent chatHistory = this.ChatHistoryFromPrompt(prompt);
 
@@ -55,7 +55,7 @@ public class OpenAIChatCompletion : AIService, IChatCompletion
         return result;
     }
 
-    public async override Task<FunctionResult> GetModelStreamingResultAsync(string pluginName, string name, string prompt, Dictionary<object, BinaryFile>? files = default)
+    public async override Task<FunctionResult> GetModelStreamingResultAsync(IKernel kernel, string pluginName, string name, string prompt, Dictionary<object, BinaryFile>? files = default)
     {
         throw new NotImplementedException();
     }

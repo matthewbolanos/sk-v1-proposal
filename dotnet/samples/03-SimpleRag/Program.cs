@@ -17,11 +17,9 @@ IChatCompletion gpt35Turbo = new AzureOpenAIChatCompletion("gpt-3.5-turbo", Azur
 IChatCompletion gpt4 = new AzureOpenAIChatCompletion("gpt-4", AzureOpenAIEndpoint, AzureOpenAIApiKey, Gpt4DeploymentName);
 
 // Create the search plugin
-List<ISKFunction> searchPluginFunctions = NativeFunction.GetFunctionsFromObject(new Search(BingApiKey));
-searchPluginFunctions.Add(SemanticFunction.GetFunctionFromYaml(currentDirectory + "/Plugins/SearchPlugin/GetSearchQuery.prompt.yaml"));
 Plugin searchPlugin = new(
     "Search",
-    functions: searchPluginFunctions
+    functions: NativeFunction.GetFunctionsFromObject(new Search(BingApiKey))
 );
 
 // Create new kernel

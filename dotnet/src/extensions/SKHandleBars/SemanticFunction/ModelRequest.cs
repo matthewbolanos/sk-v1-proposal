@@ -12,18 +12,18 @@ namespace Microsoft.SemanticKernel.Handlebars;
 public class ModelRequest 
 {
     public List<ModelMessage>? Messages { get; set; }
-    public Dictionary<string, object>? Context { get; set; }
+    public Dictionary<string, object>? Contexts { get; set; }
     
     public Dictionary<string, object>? Properties { get; set; }
 
     public ModelRequest(
         List<ModelMessage>? messages = default,
-        Dictionary<string, object>? context = default,
+        Dictionary<string, object>? contexts = default,
         Dictionary<string, object>? properties = default
     )
     {
         Messages = messages;
-        Context = context;
+        Contexts = contexts;
         Properties = properties;
     }
 }

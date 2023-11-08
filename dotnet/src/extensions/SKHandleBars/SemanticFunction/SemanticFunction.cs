@@ -12,6 +12,7 @@ using Azure.AI.OpenAI;
 using Microsoft.SemanticKernel.Connectors.AI.OpenAI.AzureSdk;
 using Microsoft.SemanticKernel.Connectors.AI.OpenAI;
 using System.Text.Json;
+using Microsoft.SemanticKernel.AI.ChatCompletion;
 
 namespace Microsoft.SemanticKernel.Handlebars;
 
@@ -175,11 +176,11 @@ public sealed class SemanticFunction : ISKFunction, IDisposable
   
         if (streaming)
         {
-            result = await client.GetModelStreamingResultAsync(this.PluginName, this.Name, renderedPrompt);
+            result = await client.GetModelStreamingResultAsync(kernel, this.PluginName, this.Name, renderedPrompt);
         }
         else
         {
-            result = await client.GetModelResultAsync(this.PluginName, this.Name, renderedPrompt);
+            result = await client.GetModelResultAsync(kernel, this.PluginName, this.Name, renderedPrompt);
         }
 
         return result;
