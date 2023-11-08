@@ -6,6 +6,7 @@ using Azure.AI.OpenAI;
 using Microsoft.SemanticKernel.AI;
 using Microsoft.SemanticKernel.AI.ChatCompletion;
 using Microsoft.SemanticKernel.Connectors.AI.OpenAI;
+using Microsoft.SemanticKernel.Connectors.AI.OpenAI.AzureSdk;
 using Microsoft.SemanticKernel.Connectors.AI.OpenAI.ChatCompletion;
 using Microsoft.SemanticKernel.Orchestration;
 
@@ -40,10 +41,117 @@ public class AzureOpenAIChatCompletion : AIService, IChatCompletion
         return this.azureChatCompletion.GetStreamingChatCompletionsAsync(chat, requestSettings, cancellationToken);
     }
 
-    public async override Task<FunctionResult> GetModelResultAsync(string pluginName, string name, string prompt, Dictionary<object, BinaryFile>? files = default)
+    public async override Task<FunctionResult> GetModelResultAsync(IKernel kernel, string pluginName, string name, string prompt, Dictionary<object, BinaryFile>? files = default)
     {
+        Tuple<ChatHistory, OpenAIRequestSettings>  requestObjects = this.ChatHistoryAndRequestSettingsFromPrompt(kernel, prompt);
+        ChatHistory chatHistory = requestObjects.Item1;
+        OpenAIRequestSettings requestSettings = requestObjects.Item2;
+
+        var completionResults =  await this.GetChatCompletionsAsync(chatHistory, requestSettings).ConfigureAwait(false);
+        var modelResults = completionResults.Select(c => c.ModelResult).ToArray();
+        var result = new FunctionResult(name, pluginName, modelResults[0].GetOpenAIChatResult().Choice.Message.Content);
+        result.Metadata.Add(AIFunctionResultExtensions.ModelResultsMetadataKey, modelResults);
+
+        return result;
+    }
+
+    public async override Task<FunctionResult> GetModelStreamingResultAsync(IKernel kernel, string pluginName, string name, string prompt, Dictionary<object, BinaryFile>? files = default)
+    {
+        Tuple<ChatHistory, OpenAIRequestSettings> requestObjects = this.ChatHistoryAndRequestSettingsFromPrompt(kernel, prompt);
+        ChatHistory chatHistory = requestObjects.Item1;
+        OpenAIRequestSettings requestSettings = requestObjects.Item2;
+
+        IAsyncEnumerable<IChatStreamingResult> completionResults = this.GetStreamingChatCompletionsAsync(chatHistory);
+        return new FunctionResult(name, pluginName, ConvertToStrings(completionResults), ConvertToFinalStringAsync(completionResults));
+    }
+
+    public override List<Type> OutputTypes()
+    {
+        return new List<Type>
+        {
+            typeof(string)
+        };
+    }
+
+    public override List<string> Capabilities()
+    {
+        return new List<string>
+        {
+            "chat"
+        };
+    }
+    
+    private async IAsyncEnumerable<string> ConvertToStrings(IAsyncEnumerable<IChatStreamingResult> completionResults)
+    {
+        await foreach (var result in completionResults)
+        {
+            await foreach (var message in result.GetStreamingChatMessageAsync())
+            {
+                yield return message.Content;
+            }
+        }
+    }
+
+    private async Task<string> ConvertToFinalStringAsync(IAsyncEnumerable<IChatStreamingResult> completionResults)
+    {
+        string finalString = "";
+        await foreach (var result in completionResults)
+        {
+            await foreach (var message in result.GetStreamingChatMessageAsync())
+            {
+                finalString += message.Content;
+            }
+        }
+
+        return finalString;
+    }
+
+    private Tuple<ChatHistory, OpenAIRequestSettings> ChatHistoryAndRequestSettingsFromPrompt(IKernel kernel, string prompt)
+    {
+        ModelRequest modelRequest = modelRequestXmlConverter.ParseXml(prompt);
+
+        ChatHistory chatHistory = this.CreateNewChat();
+        
+        if (modelRequest.Contexts != null && modelRequest.Contexts.ContainsKey("context"))
+        {
+            chatHistory.AddSystemMessage(modelRequest.Contexts["context"].ToString()!);
+        }
+
+        foreach(ModelMessage modelMessage in modelRequest.Messages!)
+        {
+            AuthorRole authorRole = modelMessage.Role.ToLower() switch
+            {
+                "assistant" => AuthorRole.Assistant,
+                "user" => AuthorRole.User,
+                "system" => AuthorRole.System,
+                "function" => AuthorRole.System,
+                _ => throw new NotImplementedException()
+            };
+            if (modelMessage.Content is MessageParts contentArray)
+            {
+                chatHistory.AddMessage(authorRole, contentArray[0].ToString()!);
+            }
+        }
+
         OpenAIRequestSettings? requestSettings = new OpenAIRequestSettings();
 
+        if (modelRequest.Contexts != null && modelRequest.Contexts.ContainsKey("functions"))
+        {
+            var functionsFromPrompt = ((FunctionChoices)modelRequest.Contexts["functions"]).GetContext();
+            List<OpenAIFunction> functionDefinitions = new();
+            if (functionsFromPrompt.Count > 0)
+            {
+                foreach(FunctionContent function in functionsFromPrompt)
+                {
+                    // Get function from kernel
+                    FunctionView functionView = kernel.Functions.GetFunction(function.PluginName, function.Name).Describe2(function.PluginName);
+                    functionDefinitions.Add(functionView.ToOpenAIFunction());
+                }
+                requestSettings.Functions = functionDefinitions;
+                requestSettings.FunctionCall = OpenAIRequestSettings.FunctionCallAuto;
+            } 
+        }
+        
         if (prompt.StartsWith("<request><message role=\"system\">## Instructions\nExplain how to achieve"))
         {
             requestSettings.ResultsPerPrompt = 1;
@@ -134,91 +242,6 @@ public class AzureOpenAIChatCompletion : AIService, IChatCompletion
             };
         }
 
-        ChatHistory chatHistory = this.ChatHistoryFromPrompt(prompt);
-
-        var completionResults =  await this.GetChatCompletionsAsync(chatHistory, requestSettings).ConfigureAwait(false);
-        var modelResults = completionResults.Select(c => c.ModelResult).ToArray();
-        var result = new FunctionResult(name, pluginName, modelResults[0].GetOpenAIChatResult().Choice.Message.Content);
-        result.Metadata.Add(AIFunctionResultExtensions.ModelResultsMetadataKey, modelResults);
-
-        return result;
-    }
-
-    public async override Task<FunctionResult> GetModelStreamingResultAsync(string pluginName, string name, string prompt, Dictionary<object, BinaryFile>? files = default)
-    {
-        ChatHistory chatHistory = this.ChatHistoryFromPrompt(prompt);
-
-        IAsyncEnumerable<IChatStreamingResult> completionResults = this.GetStreamingChatCompletionsAsync(chatHistory);
-        return new FunctionResult(name, pluginName, ConvertToStrings(completionResults), ConvertToFinalStringAsync(completionResults));
-    }
-
-    public override List<Type> OutputTypes()
-    {
-        return new List<Type>
-        {
-            typeof(string)
-        };
-    }
-
-    public override List<string> Capabilities()
-    {
-        return new List<string>
-        {
-            "chat"
-        };
-    }
-    
-    private async IAsyncEnumerable<string> ConvertToStrings(IAsyncEnumerable<IChatStreamingResult> completionResults)
-    {
-        await foreach (var result in completionResults)
-        {
-            await foreach (var message in result.GetStreamingChatMessageAsync())
-            {
-                yield return message.Content;
-            }
-        }
-    }
-
-    private async Task<string> ConvertToFinalStringAsync(IAsyncEnumerable<IChatStreamingResult> completionResults)
-    {
-        string finalString = "";
-        await foreach (var result in completionResults)
-        {
-            await foreach (var message in result.GetStreamingChatMessageAsync())
-            {
-                finalString += message.Content;
-            }
-        }
-
-        return finalString;
-    }
-
-    private ChatHistory ChatHistoryFromPrompt(string prompt)
-    {
-        ModelRequest modelRequest = modelRequestXmlConverter.ParseXml(prompt);
-
-        ChatHistory chatHistory = this.CreateNewChat();
-        
-        if (modelRequest.Context != null && modelRequest.Context.ContainsKey("context"))
-        {
-            chatHistory.AddSystemMessage(modelRequest.Context["context"].ToString()!);
-        }
-
-        foreach(ModelMessage modelMessage in modelRequest.Messages!)
-        {
-            AuthorRole authorRole = modelMessage.Role.ToLower() switch
-            {
-                "assistant" => AuthorRole.Assistant,
-                "user" => AuthorRole.User,
-                "system" => AuthorRole.System,
-                "function" => AuthorRole.System,
-                _ => throw new NotImplementedException()
-            };
-            if (modelMessage.Content is MessageParts contentArray)
-            {
-                chatHistory.AddMessage(authorRole, contentArray[0].ToString()!);
-            }
-        }
-        return chatHistory;
+        return new Tuple<ChatHistory, OpenAIRequestSettings>(chatHistory, requestSettings);
     }
 }

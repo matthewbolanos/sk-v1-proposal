@@ -2,6 +2,7 @@
 
 using System;
 using System.Collections.Generic;
+using Microsoft.SemanticKernel.Connectors.AI.OpenAI.AzureSdk;
 
 namespace Microsoft.SemanticKernel.Handlebars;
 
@@ -18,8 +19,33 @@ public sealed record FunctionView(
     string Description = "",
     IReadOnlyList<ParameterView>? Parameters = null)
 {
+
     /// <summary>
     /// List of function parameters
     /// </summary>
     public IReadOnlyList<ParameterView> Parameters { get; init; } = Parameters ?? Array.Empty<ParameterView>();
+
+    public OpenAIFunction ToOpenAIFunction()
+    {
+        var openAIParams = new List<OpenAIFunctionParameter>();
+        foreach (ParameterView param in this.Parameters)
+        {
+            openAIParams.Add(new OpenAIFunctionParameter
+            {
+                Name = param.Name,
+                Description = (param.Description ?? string.Empty)
+                    + (string.IsNullOrEmpty(param.DefaultValue) ? string.Empty : $" (default value: {param.DefaultValue})"),
+                Type = param.Type?.Name.ToLower() ?? "string",
+                IsRequired = param.IsRequired ?? false
+            });
+        }
+
+        return new OpenAIFunction
+        {
+            FunctionName = this.Name,
+            PluginName = this.PluginName,
+            Description = this.Description,
+            Parameters = openAIParams,
+        };
+    }
 }

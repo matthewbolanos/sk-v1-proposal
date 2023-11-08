@@ -61,7 +61,7 @@ template: |
   You would have 4 eggs.
   {{/message}}
 
-  {{#message role="system"}}
+  {{#message role="user"}}
   What if I had tripled them or quadrupled them instead?
   {{/message}}
 

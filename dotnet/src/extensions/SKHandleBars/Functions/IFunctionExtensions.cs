@@ -29,15 +29,15 @@ public static class HandlebarsIFunctionExtensions
     }
 
     public static FunctionView Describe2(
-        this ISKFunction function)
+        this ISKFunction function, string pluginName = "")
     {
         if (function is SemanticFunction semanticFunction)
         {
-            return semanticFunction.Describe();
+            return semanticFunction.Describe(pluginName);
         }
         if (function is NativeFunction nativeFunction)
         {
-            return nativeFunction.Describe();
+            return nativeFunction.Describe(pluginName);
         }
         
         throw new Exception("Function is not supported.");

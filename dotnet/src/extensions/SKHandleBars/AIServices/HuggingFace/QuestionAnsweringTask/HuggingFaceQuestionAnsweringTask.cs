@@ -33,7 +33,7 @@ public sealed class HuggingFaceQuestionAnsweringTask : AIService
         this._endpoint = endpoint;
     }
 
-    public async override Task<FunctionResult> GetModelResultAsync(string pluginName, string name, string prompt, Dictionary<object, BinaryFile>? files = default)
+    public async override Task<FunctionResult> GetModelResultAsync(IKernel kernel, string pluginName, string name, string prompt, Dictionary<object, BinaryFile>? files = default)
     {
         ModelRequest modelRequest = modelRequestXmlConverter.ParseXml(prompt);
 
@@ -43,14 +43,14 @@ public sealed class HuggingFaceQuestionAnsweringTask : AIService
         {
             throw new SKException("HuggingFaceSummarizationTask only supports a single user message");
         }
-        if (modelRequest.Context is null || !modelRequest.Context.ContainsKey("context"))
+        if (modelRequest.Contexts is null || !modelRequest.Contexts.ContainsKey("context"))
         {
             throw new SKException("HuggingFaceQuestionAnsweringTask requires a context to be specified");
         }
 
         var results = await this.ExecuteGetCompletionsAsync(
             userMessages[0].Content.ToString()!,
-            modelRequest.Context["context"]?.ToString() ?? string.Empty
+            modelRequest.Contexts["context"]?.ToString() ?? string.Empty
         ).ConfigureAwait(false);
         
         var result = new FunctionResult(name, pluginName, results.Answer);
@@ -59,7 +59,7 @@ public sealed class HuggingFaceQuestionAnsweringTask : AIService
         return result;
     }
 
-    public override Task<FunctionResult> GetModelStreamingResultAsync(string pluginName, string name, string prompt, Dictionary<object, BinaryFile>? files = default)
+    public override Task<FunctionResult> GetModelStreamingResultAsync(IKernel kernel, string pluginName, string name, string prompt, Dictionary<object, BinaryFile>? files = default)
     {
         throw new NotImplementedException();
     }

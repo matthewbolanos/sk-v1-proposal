@@ -11,7 +11,7 @@ string BingApiKey = Env.Var("Bing:ApiKey")!;
 string currentDirectory = Directory.GetCurrentDirectory();
 
 // Initialize the required functions and services for the kernel
-IChatCompletion gpt35Turbo = new OpenAIChatCompletion("gpt-3.5-turbo", OpenAIApiKey);
+IChatCompletion gpt35Turbo = new OpenAIChatCompletion("gpt-4-1106-preview", OpenAIApiKey);
 IChatCompletion gpt4Vision = new OpenAIChatCompletion("gpt-4-vision-preview", OpenAIApiKey);
 
 // Create plugins

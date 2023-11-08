@@ -119,8 +119,10 @@ public sealed class NativeFunction : ISKFunction, IDisposable
     }
 
     /// <inheritdoc/>
-    public FunctionView Describe()
-        => this._view.Value;
+    public FunctionView Describe(string pluginName = "")
+    {
+        return new FunctionView(this.Name, pluginName, this.Description, this.Parameters);
+    }
     
     public async Task<FunctionResult> InvokeAsync(
         IKernel kernel,
@@ -212,8 +214,6 @@ public sealed class NativeFunction : ISKFunction, IDisposable
 
         this.Name = functionName;
         this.Description = description;
-
-        this._view = new(() => new (functionName, description) { Parameters = this.Parameters });
     }
 
     /// <summary>
@@ -405,6 +405,10 @@ public sealed class NativeFunction : ISKFunction, IDisposable
                     if (value is string && type != typeof(string))
                     {
                         return JsonSerializer.Deserialize(value.ToString()!, type);
+                    }
+                    else if (value is JsonElement element && element.ValueKind == JsonValueKind.String)
+                    {
+                        return element.ToString();
                     }
                     else
                     {
