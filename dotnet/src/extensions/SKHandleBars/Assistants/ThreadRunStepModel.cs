@@ -54,12 +54,36 @@ public class ThreadRunStepModel
 
         [JsonPropertyName("message_creation")]
         public MessageCreationDetailsModel MessageCreation { get; set; }
+
+        [JsonPropertyName("tool_calls")]
+        public List<ToolCallsDetailsModel> ToolCalls { get; set; }
     }
 
     public class MessageCreationDetailsModel
     {
         [JsonPropertyName("message_id")]
         public string MessageId { get; set; }
+    }
+
+    public class ToolCallsDetailsModel
+    {
+        [JsonPropertyName("id")]
+        public string Id { get; set; }
+
+        [JsonPropertyName("type")]
+        public string Type { get; set; }
+
+        [JsonPropertyName("function")]
+        public FunctionDetailsModel Function { get; set; }
+    }
+
+    public class FunctionDetailsModel
+    {
+        [JsonPropertyName("name")]
+        public string Name { get; set; }
+
+        [JsonPropertyName("arguments")]
+        public string Arguments { get; set; }
     }
 
 }

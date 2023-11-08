@@ -1,6 +1,7 @@
 using System.Text;
 using System.Text.Json;
 using Microsoft.SemanticKernel.AI;
+using Microsoft.SemanticKernel.AI.ChatCompletion;
 using Microsoft.SemanticKernel.AI.TextCompletion;
 
 namespace Microsoft.SemanticKernel.Handlebars;
@@ -102,13 +103,38 @@ public class OpenAIThread : IThread
         {
             // Create a run on the thread
             ThreadRunModel threadRunModel = await CreateThreadRunAsync(assistantKernel);
+            ThreadRunStepListModel threadRunSteps;
 
             // Poll the run until it is complete
-            while (threadRunModel.Status == "queued" || threadRunModel.Status == "in_progress")
+            while (threadRunModel.Status == "queued" || threadRunModel.Status == "in_progress" || threadRunModel.Status == "requires_action")
             {
                 // Add a delay
                 await Task.Delay(300);
-                threadRunModel = GetThreadRunAsync(threadRunModel.Id).Result;
+
+                if (threadRunModel.Status == "requires_action")
+                {
+                    // Get the steps
+                    threadRunSteps = await GetThreadRunStepsAsync(threadRunModel.Id);
+                    
+                    foreach(ThreadRunStepModel threadRunStep in threadRunSteps.Data)
+                    {
+                        if (threadRunStep.Status == "in_progress" && threadRunStep.StepDetails.Type == "tool_calls")
+                        {
+                            foreach(var toolCall in threadRunStep.StepDetails.ToolCalls)
+                            {
+                                // Run function
+                                var result = await InvokeFunctionCallAsync(kernel, toolCall.Function.Name, toolCall.Function.Arguments);
+
+                                // Update the thread run
+                                threadRunModel = await SubmitToolOutputsToRun(threadRunModel.Id, toolCall.Id, result);
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    threadRunModel = GetThreadRunAsync(threadRunModel.Id).Result;
+                }
             }
 
             // Check for errors
@@ -120,7 +146,7 @@ public class OpenAIThread : IThread
             }
 
             // Get the steps
-            ThreadRunStepListModel threadRunSteps = await GetThreadRunStepsAsync(threadRunModel.Id);
+            threadRunSteps = await GetThreadRunStepsAsync(threadRunModel.Id);
 
             // Check step details
             List<ModelMessage> messages = new List<ModelMessage>();
@@ -140,13 +166,96 @@ public class OpenAIThread : IThread
         throw new NotImplementedException();
     }
 
+    private async Task<string> InvokeFunctionCallAsync(IKernel kernel, string name, string arguments)
+    {
+        // split name
+        string[] nameParts = name.Split("-");
+
+        // get function from kernel
+        var function = kernel.Functions.GetFunction(nameParts[0], nameParts[1]);
+        // TODO: change back to Dictionary<string, object>
+        Dictionary<string, object> variables = JsonSerializer.Deserialize<Dictionary<string, object>>(arguments)!;
+
+        var results = await kernel.RunAsync(
+            function,
+            variables: variables!
+        );
+
+        return results.GetValue<string>()!;
+    }
+
+    private async Task<ThreadRunModel> SubmitToolOutputsToRun(string runId, string toolCallId, string output)
+    {
+        var requestData = new
+        {
+            tool_outputs = new [] {
+                new {
+                    tool_call_id = toolCallId,
+                    output = output
+                }
+            } 
+        };
+
+        string url = "https://api.openai.com/v1/threads/"+this.Id+"/runs/"+runId+"/submit_tool_outputs";
+        using var httpRequestMessage = HttpRequest.CreatePostRequest(url, requestData);
+        httpRequestMessage.Headers.Add("Authorization", $"Bearer {this.apiKey}");
+        httpRequestMessage.Headers.Add("OpenAI-Beta", "assistants=v1");
+
+        var response = await this.client.SendAsync(httpRequestMessage).ConfigureAwait(false);
+
+        string responseBody = await response.Content.ReadAsStringAsync();
+        return JsonSerializer.Deserialize<ThreadRunModel>(responseBody)!;
+    }
+
     private async Task<ThreadRunModel> CreateThreadRunAsync(AssistantKernel kernel)
 	{
+        List<object> tools = new List<object>();
+
+        foreach(FunctionView functionView in kernel.GetFunctionViews())
+        {
+            var OpenAIFunction = functionView.ToOpenAIFunction().ToFunctionDefinition();
+            
+            var requiredParams = new List<string>();
+            var paramProperties = new Dictionary<string, object>();
+            foreach (var param in functionView.Parameters)
+            {
+                paramProperties.Add(
+                    param.Name,
+                    new
+                    {
+                        type = param.Type.Name.ToLower(),
+                        description = param.Description,
+                    });
+
+                if (param.IsRequired ?? false)
+                {
+                    requiredParams.Add(param.Name);
+                }
+            }
+
+            tools.Add(new {
+                type = "function",
+                function = new {
+                    name = OpenAIFunction.Name,
+                    description = OpenAIFunction.Description,
+                    parameters = new
+                    {
+                        type = "object",
+                        properties = paramProperties,
+                        required = requiredParams,
+                    }
+                }
+            });
+        }
+
 		var requestData = new
 		{
 			assistant_id = kernel.Id,
-			instructions = kernel.Instructions
+			instructions = kernel.Instructions,
+            tools = tools
 		};
+
+        string requestDataJson = JsonSerializer.Serialize(requestData);
 
 		string url = "https://api.openai.com/v1/threads/"+this.Id+"/runs";
         using var httpRequestMessage = HttpRequest.CreatePostRequest(url, requestData);

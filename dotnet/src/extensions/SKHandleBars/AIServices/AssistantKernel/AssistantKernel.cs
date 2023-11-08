@@ -137,7 +137,11 @@ public class AssistantKernel : IKernel, IPlugin
             NativeFunction.FromNativeFunction(
                 this.AskAsync,
                 "Ask",
-                this.Description
+                this.Description,
+				new List<ParameterView>
+				{
+					new ParameterView("ask", typeof(string), "The question to ask the assistant"),
+				}
             )
         };
 	}
@@ -256,6 +260,18 @@ public class AssistantKernel : IKernel, IPlugin
 
 	private async Task<string> AskAsync(string ask, string? threadId = default)
 	{
+		Console.ForegroundColor = ConsoleColor.Blue;
+		Console.Write("ProjectManager");
+		Console.ResetColor();
+		Console.Write(" to ");
+		Console.ForegroundColor = ConsoleColor.Green;
+		Console.Write(this.Name);
+		Console.ResetColor();
+		Console.Write(" > ");
+		Console.ForegroundColor = ConsoleColor.Blue;
+		Console.WriteLine(ask);
+		Console.ResetColor();
+
 		IThread thread;
 		if (threadId == null)
 		{
@@ -268,15 +284,31 @@ public class AssistantKernel : IKernel, IPlugin
 			thread = await GetThreadAsync(threadId);
 		}
 
+		thread.AddUserMessageAsync(ask);
+
 		var results = await this.RunAsync(
 			thread,
-			variables: new Dictionary<string, object?>()
-			{
-				{ "ask", ask }
-			}
+			variables: new Dictionary<string, object?>() {}
 		);
 
-		return results.GetValue<string>()!;
+		List<ModelMessage> modelMessages = results.GetValue<List<ModelMessage>>()!;
+
+		// Concatenate all the messages from the model
+		string resultsString = String.Join("\n",modelMessages.Select(modelMessage => modelMessage.ToString()));
+
+		Console.ForegroundColor = ConsoleColor.Green;
+		Console.Write(this.Name);
+		Console.ResetColor();
+		Console.Write(" to ");
+		Console.ForegroundColor = ConsoleColor.Blue;
+		Console.Write("ProjectManager");
+		Console.ResetColor();
+		Console.Write(" > ");
+		Console.ForegroundColor = ConsoleColor.Green;
+		Console.WriteLine(resultsString);
+		Console.ResetColor();
+
+		return resultsString;
 	}
 
 

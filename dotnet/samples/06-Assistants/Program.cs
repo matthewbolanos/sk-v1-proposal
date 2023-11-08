@@ -1,18 +1,13 @@
 ﻿
 using Microsoft.SemanticKernel.AI.ChatCompletion;
 using Microsoft.SemanticKernel.Handlebars;
-using ISKFunction = Microsoft.SemanticKernel.ISKFunction;
-using IKernel = Microsoft.SemanticKernel.IKernel;
-using System.Text.Json;
-using Microsoft.SemanticKernel.AI;
 
 string OpenAIApiKey = Env.Var("OpenAI:ApiKey")!;
 string BingApiKey = Env.Var("Bing:ApiKey")!;
 string currentDirectory = Directory.GetCurrentDirectory();
 
 // Initialize the required functions and services for the kernel
-IChatCompletion gpt35Turbo = new OpenAIChatCompletion("gpt-4-1106-preview", OpenAIApiKey);
-IChatCompletion gpt4Vision = new OpenAIChatCompletion("gpt-4-vision-preview", OpenAIApiKey);
+IChatCompletion gpt4Turbo = new OpenAIChatCompletion("gpt-4-1106-preview", OpenAIApiKey);
 
 // Create plugins
 IPlugin mathPlugin = new Plugin(
@@ -25,31 +20,30 @@ IPlugin searchPlugin = new Plugin(
     functions: NativeFunction.GetFunctionsFromObject(new Search(BingApiKey))
 );
 
-
 // Create a researcher
 IPlugin researcher = AssistantKernel.FromConfiguration(
     currentDirectory + "/Assistants/Researcher.agent.yaml",
-    aiServices: new () { gpt35Turbo },
+    aiServices: new () { gpt4Turbo },
     plugins: new () { searchPlugin }
 );
 
 // Create a mathmatician
 IPlugin mathmatician = AssistantKernel.FromConfiguration(
     currentDirectory + "/Assistants/Mathmatician.agent.yaml",
-    aiServices: new () { gpt4Vision },
+    aiServices: new () { gpt4Turbo },
     plugins: new () { mathPlugin }
 );
 
 // Create a designer
 IPlugin designer = AssistantKernel.FromConfiguration(
     currentDirectory + "/Assistants/Designer.agent.yaml",
-    aiServices: new () { gpt4Vision }
+    aiServices: new () { gpt4Turbo }
 );
 
 // Create a Project Manager
 AssistantKernel projectManager = AssistantKernel.FromConfiguration(
     currentDirectory + "/Assistants/ProjectManager.agent.yaml",
-    aiServices: new () { gpt35Turbo },
+    aiServices: new () { gpt4Turbo },
     plugins: new () { researcher, mathmatician, designer }
 );
 
