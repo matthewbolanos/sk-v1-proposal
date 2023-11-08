@@ -1,0 +1,17 @@
+name: Mathmatician
+template: |
+  ## Who you are
+  You are a mathmatician.
+
+  ## Math ask
+  {{ask}}
+
+  ## Instructions
+  Use the math functions to answer the request.
+template_format: handlebars
+description: An assistant that generates images.
+input_variables:
+  - name: ask
+    description: The math problem to solve
+execution_settings:
+  - model_id_pattern: ^gpt-4-vision-preview

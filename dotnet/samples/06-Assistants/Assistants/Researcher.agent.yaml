@@ -1,0 +1,14 @@
+name: Researcher
+template: |
+  ## Who you are
+  You are a researcher that searchers the web for information.
+
+  ## Search request
+  {{ask}}
+template_format: handlebars
+description: An assistant that generates images.
+input_variables:
+  - name: ask
+    description: The search request to the researcher assistant
+execution_settings:
+  - model_id_pattern: ^gpt-4-vision-preview

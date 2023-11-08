@@ -22,22 +22,22 @@ public class Kernel : IKernel
 	private readonly Microsoft.SemanticKernel.Kernel kernel;
 	public ISKFunction? EntryPoint { get; }
 
-	private readonly List<Plugin> plugins;
+	private readonly List<IPlugin> plugins;
 	private readonly List<IAIService> AIServices;
 
 	public Kernel(
 		List<IAIService>? aiServices = null,
-		List<Plugin>? plugins = null,
+		List<IPlugin>? plugins = null,
 		List<IPromptTemplateEngine>? promptTemplateEngines = null,
 		ISKFunction? entryPoint = null
 	)
 	{
 		// Create a function collection using the plugins
 		FunctionCollection functionCollection = new FunctionCollection();
-		this.plugins = plugins ?? new List<Plugin>();
+		this.plugins = plugins ?? new List<IPlugin>();
 		if (plugins != null)
 		{
-			foreach(Plugin plugin in plugins)
+			foreach(IPlugin plugin in plugins)
 			{
 				foreach(ISKFunction function in plugin.Functions)
 				{

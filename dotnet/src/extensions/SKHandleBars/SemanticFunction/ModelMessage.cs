@@ -15,4 +15,18 @@ public class ModelMessage
         Content = content;
         Properties = properties;
     }
+
+    public override string ToString()
+    {
+        if (Content is IEnumerable enumerable)
+        {
+            var sb = new StringBuilder();
+            foreach (var item in enumerable)
+            {
+                sb.Append(item);
+            }
+            return sb.ToString();
+        }
+        return Content.ToString() ?? string.Empty;
+    }
 }
