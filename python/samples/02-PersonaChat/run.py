@@ -19,7 +19,7 @@ async def runner():
     gpt35turbo = AzureChatCompletion(
         **azure_openai_settings_from_dot_env_as_dict(include_api_version=True),
     )
-    chat_function = SemanticFunction(
+    chat_function = SemanticFunction.from_path(
         path=os.getcwd()
         + "/python/samples/02-PersonaChat/plugins/ChatPlugin/PersonaChat.prompt.yaml"
     )

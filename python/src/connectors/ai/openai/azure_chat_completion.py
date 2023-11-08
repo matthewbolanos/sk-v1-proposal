@@ -34,7 +34,7 @@ class AzureChatCompletion(SKBaseModel, ChatCompletionClientBase):
     ) -> dict:
         if "service" in kwargs:
             del kwargs["service"]
-        chat_history = OpenAIChatHistory.from_prompt(rendered_template)
+        chat_history = OpenAIChatHistory.from_rendered_template(rendered_template)
         response = await self._send_chat_request(
             chat_history, request_settings, functions=functions, **kwargs
         )

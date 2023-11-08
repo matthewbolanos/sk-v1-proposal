@@ -2,41 +2,69 @@ import re
 from typing import Any, Final
 
 from semantic_kernel.connectors.ai.open_ai.models.chat.function_call import FunctionCall
-from semantic_kernel.connectors.ai.open_ai.models.chat.open_ai_chat_message import (
-    OpenAIChatMessage,
-)
 from semantic_kernel.sk_pydantic import SKBaseModel
 
+from .openai_chat_message import OpenAIChatMessage
+
 RESPONSE_OBJECT_KEY: Final = "response_object"
+
+USER_ROLE: Final = "user"
+ASSISTANT_ROLE: Final = "assistant"
+SYSTEM_ROLE: Final = "system"
+FUNCTION_CALL_ROLE: Final = "function"
+TOOL_ROLE: Final = "tool"
+ALL_ROLES = [USER_ROLE, ASSISTANT_ROLE, SYSTEM_ROLE, FUNCTION_CALL_ROLE, TOOL_ROLE]
 
 
 class OpenAIChatHistory(SKBaseModel):
     messages: list[OpenAIChatMessage] = []
 
     def add_user_message(self, message: str):
-        self.messages.append(OpenAIChatMessage(role="user", fixed_content=message))
+        self.add_message(role=USER_ROLE, content=message)
 
     def add_assistant_message(
         self, message: str | None = None, function_call: FunctionCall | None = None
     ):
-        self.messages.append(OpenAIChatMessage(role="assistant", fixed_content=message))
+        self.add_message(
+            role=ASSISTANT_ROLE, content=message, function_call=function_call
+        )
 
     def add_system_message(self, message: str):
-        self.messages.append(OpenAIChatMessage(role="system", fixed_content=message))
+        self.add_message(role=SYSTEM_ROLE, content=message)
 
     def add_function_call_response(self, function_name: str, result: str):
+        self.add_message(role=FUNCTION_CALL_ROLE, content=result, name=function_name)
+
+    def add_message(
+        self,
+        role: str,
+        content: str | None,
+        name: str | None = None,
+        function_call: FunctionCall | None = None,
+        tool_calls: list[FunctionCall] | None = None,
+    ):
+        if role not in ALL_ROLES:
+            raise ValueError(f"Invalid role: {role}")
+        if (function_call or tool_calls) and not role == "assistant":
+            raise ValueError("Only assistant messages can have function or tool calls")
+        if name and not role not in (FUNCTION_CALL_ROLE, TOOL_ROLE):
+            raise ValueError("Only function calls and tools can have names")
         self.messages.append(
             OpenAIChatMessage(
-                role="function_call", fixed_content=result, name=function_name
+                role=role,
+                content=content,
+                name=name,
+                function_call=function_call,
+                tool_calls=tool_calls,
             )
         )
 
     def add_openai_response(self, response: Any):
         if "choices" in response:
             message = response.choices[0].message
-            self.messages.append(OpenAIChatMessage(**message))
+            self.add_message(**message)
         else:
-            self.messages.append(OpenAIChatMessage(**response))
+            self.add_message(**response)
 
     def __iter__(self) -> iter:
         return self.messages.__iter__()
@@ -48,24 +76,16 @@ class OpenAIChatHistory(SKBaseModel):
         return self.messages[key]
 
     @classmethod
-    def from_prompt(cls, rendered_template: str):
-        # <message role="system">You are a helpful assistant.\n</message>\n<message role="user">how doe handlebars work?</message>
-
+    def from_rendered_template(cls, rendered_template: str):
+        # <message role="system">You are a helpful assistant.\n</message>\n<message role="user">how do handlebars work?</message>
+        # TODO: decide on format of function/tool calls and name fields in intermediate template.
         chat_history = cls()
-        rendered_template = rendered_template.strip()
-        pattern = r'<message role="(\w+)">(.*?)</message>'
-        matches = re.findall(pattern, rendered_template, re.DOTALL)
-        for match in matches:
-            role = match[0]
-            content = match[1]
-            if role == "user":
-                chat_history.add_user_message(content)
-            elif role == "system":
-                chat_history.add_system_message(content)
-            elif role == "assistant":
-                chat_history.add_assistant_message(content)
-            elif role == "function_call":
-                chat_history.add_function_call_response(content)
-            else:
-                raise ValueError(f"Unknown role {role}")
+        [
+            chat_history.add_message(role=match[0], content=match[1])
+            for match in re.findall(
+                r'<message role="(\w+)">(.*?)</message>',
+                rendered_template.strip(),
+                re.DOTALL,
+            )
+        ]
         return chat_history

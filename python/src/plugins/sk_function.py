@@ -13,3 +13,7 @@ class SKFunction(SKBaseModel):
     @abstractmethod
     async def run_async(self, variables, **kwargs) -> dict:
         pass
+
+    @property
+    def output_variable_name(self) -> str:
+        return self.output_variables[0].name

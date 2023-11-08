@@ -77,8 +77,8 @@ class newKernel(Kernel):
             results.append(await function.run_async(variables, **kwargs))
         for hook in self.hooks:
             _LOGGER.info("Running hook: %s", hook.name)
-            results, variables, _, _ = await hook.on_invoke_end(
-                results=results, variables=variables
+            results, variables, _, _, _ = await hook.on_invoke_end(
+                results=results, functions=functions, variables=variables
             )
         return results if len(results) > 1 else results[0]
 

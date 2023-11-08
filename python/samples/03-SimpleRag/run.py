@@ -26,7 +26,7 @@ async def runner():
         Search(bing_connector=BingConnector(api_key=os.getenv("BING_API_KEY"))),
     )
     search_plugin.add_function(
-        SemanticFunction(
+        SemanticFunction.from_path(
             path=os.getcwd()
             + "/python/samples/03-SimpleRag/plugins/SearchPlugin/GetSearchQuery.prompt.yaml"
         )
@@ -34,7 +34,7 @@ async def runner():
     gpt35turbo = AzureChatCompletion(
         **azure_openai_settings_from_dot_env_as_dict(include_api_version=True),
     )
-    chat_function = SemanticFunction(
+    chat_function = SemanticFunction.from_path(
         path=os.getcwd()
         + "/python/samples/03-SimpleRag/plugins/ChatPlugin/GroundedChat.prompt.yaml"
     )

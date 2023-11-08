@@ -7,6 +7,7 @@ from . import NativeFunction, SKFunction
 
 class SKPlugin(SKBaseModel):
     name: str
+    description: str = ""
     functions: dict[str, SKFunction] = {}
 
     def __init__(self, name: str, functions: list["SKFunction"] | None = None):
@@ -18,14 +19,6 @@ class SKPlugin(SKBaseModel):
 
     @classmethod
     def from_class(cls, name: str, class_object: Any) -> "SKPlugin":
-        # functions = []
-        # print(dir(class_object))
-        # members = [attr for attr in dir(class_object) if not attr.startswith("__")]
-        # for func_name in members:
-        #     function = getattr(class_object, func_name)
-        #     if hasattr(function, "__sk_function__") and function.__sk_function__:
-        #         functions.append(function)
-
         functions = [
             NativeFunction(getattr(class_object, function))
             for function in dir(class_object)

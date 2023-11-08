@@ -10,12 +10,12 @@ class HookBase(SKBaseModel):
 
     async def on_invoke_start(
         self,
-        functions: list[SKFunction] | SKFunction,
+        functions: list[SKFunction],
         variables: dict[str, Any] | None = None,
         request_settings: dict[str, Any] | None = None,
         kwargs: dict | None = None,
     ) -> tuple[
-        list[SKFunction] | SKFunction,
+        list[SKFunction],
         dict[str, Any] | None,
         dict[str, Any] | None,
         dict | None,
@@ -25,8 +25,15 @@ class HookBase(SKBaseModel):
     async def on_invoke_end(
         self,
         results: list[dict],
+        functions: list[SKFunction],
         variables: dict[str, Any] | None = None,
         request_settings: dict[str, Any] | None = None,
         kwargs: dict | None = None,
-    ) -> tuple[list[dict], dict[str, Any] | None, dict[str, Any] | None, dict | None]:
-        return results, variables, request_settings, kwargs
+    ) -> tuple[
+        list[dict],
+        list[SKFunction],
+        dict[str, Any] | None,
+        dict[str, Any] | None,
+        dict | None,
+    ]:
+        return results, functions, variables, request_settings, kwargs

@@ -1,4 +1,5 @@
 import asyncio
+import json
 import threading
 from typing import Any
 
@@ -14,6 +15,48 @@ def _message(this, options, **kwargs):
         role = kwargs.get("role" or "Role")
         if role:
             return f'<message role="{kwargs.get("role") or kwargs.get("Role")}">{options["fn"](this)}</message>'
+
+
+def _set(this, *args, **kwargs):
+    if "name" in kwargs and "value" in kwargs:
+        this.context[kwargs["name"]] = kwargs["value"]
+    return ""
+
+
+def _array(this, *args, **kwargs):
+    return {key: list(value) for key, value in kwargs.items()}
+
+
+def _concat(this, *args, **kwargs):
+    return "".join([str(value) for value in kwargs.values()])
+
+
+def _equal(this, *args, **kwargs):
+    return args[0] == args[1]
+
+
+def _less_than(this, *args, **kwargs):
+    return float(args[0]) < float(args[1])
+
+
+def _greater_than(this, *args, **kwargs):
+    return float(args[0]) > float(args[1])
+
+
+def _less_than_or_equal(this, *args, **kwargs):
+    return float(args[0]) <= float(args[1])
+
+
+def _greater_than_or_equal(this, *args, **kwargs):
+    return float(args[0]) >= float(args[1])
+
+
+def _raw(this, options, *args, **kwargs):
+    return options["fn"]()
+
+
+def _json(this, *args, **kwargs):
+    return json.dumps(args[0])
 
 
 # TODO: render functions are helpers
@@ -55,7 +98,19 @@ class HandleBarsPromptTemplateHandler(SKBaseModel):
         self._template_compiler = compiler.compile(self.template)
 
     async def render(self, variables: dict, **kwargs) -> str:
-        helpers = {"message": _message}
+        helpers = {
+            "message": _message,
+            "set": _set,
+            "array": _array,
+            "concat": _concat,
+            "equal": _equal,
+            "lessThan": _less_than,
+            "greaterThan": _greater_than,
+            "lessThanOrEqual": _less_than_or_equal,
+            "greaterThanOrEqual": _greater_than_or_equal,
+            "raw": _raw,
+            "json": _json,
+        }
         kwargs["called_by_template"] = True
         if "plugin_functions" in kwargs:
             plugin_functions = kwargs.get("plugin_functions")

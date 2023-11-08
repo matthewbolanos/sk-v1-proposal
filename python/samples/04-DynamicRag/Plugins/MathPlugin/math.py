@@ -1,12 +1,86 @@
+from enum import Enum
+from typing import TYPE_CHECKING
+
+from python.src.planners.handlebars_planner import (
+    HandleBarsPlanner,
+    HandleBarsPlannerConfig,
+)
 from python.src.plugins import (
     sk_function,
     sk_function_parameter,
 )
 
+if TYPE_CHECKING:
+    from python.src.kernel import NewKernel
+
+
+class console_colors(str, Enum):
+    OKBLUE = "\033[94m"
+    OKGREEN = "\033[92m"
+    FAIL = "\033[91m"
+    ENDC = "\033[0m"
+
 
 class Math:
     def __init__(self):
-        pass
+        self.kernel = None
+
+    @sk_function(
+        description="Uses functions from the Math plugin to solve math problems.",
+        name="PerformMath",
+    )
+    @sk_function_parameter(
+        name="kernel",
+        description="The kernel to use for planning.",
+        required=True,
+        type="kernel",
+    )
+    @sk_function_parameter(
+        name="math_problem",
+        description="A description of a math problem; use the GenerateMathProblem function to create one.",
+        required=True,
+        type="string",
+    )
+    @sk_function_parameter(
+        name="result",
+        direction="output",
+        description="The answer to the math problem.",
+        type="number",
+    )
+    async def perform_math(self, variables, **kwargs):
+        kernel: "NewKernel" = kwargs.get("kernel")
+        assert kernel
+        math_problem: str = variables["math_problem"]
+        max_tries = 1
+        last_plan = None
+        last_error = None
+        # TODO: new config that also has include plugin
+        while max_tries >= 0:
+            config = HandleBarsPlannerConfig(
+                excluded_plugins=["Intent"],
+                excluded_functions=[
+                    "Math_GenerateMathProblem",
+                    "Math_PerformMath",
+                ],
+                last_plan=last_plan,
+                last_error=last_error,
+            )
+            planner = HandleBarsPlanner(kernel=kernel, configuration=config)
+            plan = await planner.create_plan(
+                goal=f"Solve the following math problem: {math_problem}"
+            )
+            last_plan = str(plan)
+            print(f"{console_colors.OKBLUE}[Plan]: {plan}\n{console_colors.ENDC}")
+            try:
+                result = await plan.run_async(variables)
+                print(
+                    f"{console_colors.OKGREEN}[Result]: {result}\n{console_colors.ENDC}"
+                )
+                return str(result)
+            except Exception as exc:
+                print(f"{console_colors.FAIL}[Error]: {exc}\n{console_colors.ENDC}")
+                last_error = str(exc)
+                max_tries -= 1
 
     @sk_function(
         description="Adds two numbers",
