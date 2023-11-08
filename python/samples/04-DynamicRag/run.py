@@ -7,6 +7,7 @@ from semantic_kernel.utils.settings import azure_openai_settings_from_dot_env_as
 # to allow the strange structure and the import of the new pieces
 sys.path.append(os.getcwd())
 from python.src.connectors import (
+    AddAssistantMessageToHistoryHook,
     AzureChatCompletion,
     StreamingResultToStdOutHook,
 )
@@ -55,7 +56,7 @@ async def runner():
     kernel = Kernel(
         ai_services=[gpt35turbo, gpt4],
         plugins=[math_plugin, intent_plugin],
-        hooks=[StreamingResultToStdOutHook()],
+        hooks=[StreamingResultToStdOutHook(), AddAssistantMessageToHistoryHook()],
     )
 
     # create chat_history
@@ -68,7 +69,7 @@ async def runner():
         chat_history.add_user_message(user_input)
 
         # get response
-        results = await kernel.run_async(
+        await kernel.run_async(
             chat_function,
             variables={
                 "persona": "You are a snarky (yet helpful) teenage assistant. Make sure to use hip slang in every response.",
@@ -76,7 +77,7 @@ async def runner():
             },
             kernel=kernel,
         )
-        chat_history.add_assistant_message(results["result"])
+        print(f"Total messages in chat_history: {len(chat_history.messages)}")
 
 
 def __main__():

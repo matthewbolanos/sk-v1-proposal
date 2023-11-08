@@ -17,3 +17,7 @@ class SKFunction(SKBaseModel):
     @property
     def output_variable_name(self) -> str:
         return self.output_variables[0].name
+
+    @property
+    def Parameters(self) -> dict:
+        return {parameter.name: parameter for parameter in self.input_variables}

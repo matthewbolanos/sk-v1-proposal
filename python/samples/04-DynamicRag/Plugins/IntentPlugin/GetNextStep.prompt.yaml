@@ -30,7 +30,7 @@ template: |
   {{#message role="assistant"}}
   AskClarifyingMathQuestion
   {{/message}}
-  
+
 
   {{#message role="system"}}
   ### Examples 2
@@ -102,8 +102,6 @@ template: |
   {{#message role="system"}}
   Provide action
   {{/message}}
-
-
 template_format: handlebars
 description: A function that determines the next action the assistant should take.
 input_variables:
@@ -112,8 +110,8 @@ input_variables:
     description: The history of the chat.
     is_required: true
 output_variable:
-    type: string
-    description: The action the assistant should take.
+  type: string
+  description: The action the assistant should take.
 execution_settings:
   - model_id_pattern: ^gpt-3\.?5-turbo
     temperature: 0.3

@@ -72,9 +72,6 @@ class OpenAIChatHistory(SKBaseModel):
     def __len__(self) -> int:
         return len(self.messages)
 
-    def __getitem__(self, key: int) -> Any:
-        return self.messages[key]
-
     @classmethod
     def from_rendered_template(cls, rendered_template: str):
         # <message role="system">You are a helpful assistant.\n</message>\n<message role="user">how do handlebars work?</message>

@@ -62,6 +62,26 @@ class StreamingResultToStdOutHook(HookBase):
 class AddAssistantMessageToHistoryHook(HookBase):
     name: str = "add_assistant_message_to_history"
     chat_history_variable_name: str = "messages"
+    current_chat_history: OpenAIChatHistory | None = None
+
+    async def on_invoke_start(
+        self,
+        functions: list[SKFunction],
+        variables: dict[str, Any] | None = None,
+        request_settings: dict[str, Any] | None = None,
+        kwargs: dict | None = None,
+    ) -> tuple[
+        list[SKFunction],
+        dict[str, Any] | None,
+        dict[str, Any] | None,
+        dict | None,
+    ]:
+        if (
+            self.current_chat_history is None
+            and self.chat_history_variable_name in variables
+        ):
+            self.current_chat_history = variables[self.chat_history_variable_name]
+        return functions, variables, request_settings, kwargs
 
     async def on_invoke_end(
         self,
@@ -85,11 +105,10 @@ class AddAssistantMessageToHistoryHook(HookBase):
                 and function.output_variable_name in result
             ):
                 response = result[function.output_variable_name]
-                if self.chat_history_variable_name in variables:
-                    chat_history = variables[self.chat_history_variable_name]
-                    if isinstance(chat_history, OpenAIChatHistory):
-                        chat_history.add_assistant_message(response)
-                    results[idx][self.chat_history_variable_name] = chat_history
+                self.current_chat_history.add_assistant_message(response)
+                results[idx][
+                    self.chat_history_variable_name
+                ] = self.current_chat_history
         return results, functions, variables, request_settings, kwargs
 
 

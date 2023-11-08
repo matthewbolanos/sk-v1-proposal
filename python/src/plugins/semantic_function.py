@@ -23,7 +23,7 @@ class SemanticFunction(SKFunction):
         # parse the yaml
         template = yaml_data["template"]
         if yaml_data["template_format"].lower() == "handlebars":
-            template = HandleBarsPromptTemplateHandler(template)
+            template = HandleBarsPromptTemplateHandler(template.strip())
 
         input_variables = [
             Parameter(

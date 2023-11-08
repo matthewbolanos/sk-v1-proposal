@@ -3,6 +3,7 @@ import json
 import threading
 from typing import Any
 
+import pybars
 from pybars import Compiler
 from pydantic import PrivateAttr
 from semantic_kernel.sk_pydantic import SKBaseModel
@@ -20,11 +21,30 @@ def _message(this, options, **kwargs):
 def _set(this, *args, **kwargs):
     if "name" in kwargs and "value" in kwargs:
         this.context[kwargs["name"]] = kwargs["value"]
+    if len(args) == 2 and isinstance(args[0], str):
+        this.context[args[0]] = args[1]
     return ""
 
 
+def _get(this, *args, **kwargs):
+    return this.context.get(args[0], "")
+
+
 def _array(this, *args, **kwargs):
-    return {key: list(value) for key, value in kwargs.items()}
+    return list(args)
+
+
+def _range(this, *args, **kwargs):
+    args = list(args)
+    for idx in range(len(args)):
+        if not isinstance(args[idx], int):
+            try:
+                args[idx] = int(args[idx])
+            except ValueError:
+                args.pop(idx)
+    if len(args) == 1:
+        return list(range(args[0]))
+    return list(range(args[0], args[1]))
 
 
 def _concat(this, *args, **kwargs):
@@ -51,12 +71,22 @@ def _greater_than_or_equal(this, *args, **kwargs):
     return float(args[0]) >= float(args[1])
 
 
-def _raw(this, options, *args, **kwargs):
-    return options["fn"]()
-
-
 def _json(this, *args, **kwargs):
+    if not args:
+        return ""
     return json.dumps(args[0])
+
+
+def _double_open(this, *args, **kwargs):
+    return "{{"
+
+
+def _double_close(this, *args, **kwargs):
+    return "}}"
+
+
+def _camel_case(this, *args, **kwargs):
+    return "".join([word.capitalize() for word in args[0].split("_")])
 
 
 # TODO: render functions are helpers
@@ -95,21 +125,26 @@ class HandleBarsPromptTemplateHandler(SKBaseModel):
     def __init__(self, template: str):
         super().__init__(template=template)
         compiler = Compiler()
+        pybars.debug = True
         self._template_compiler = compiler.compile(self.template)
 
     async def render(self, variables: dict, **kwargs) -> str:
         helpers = {
             "message": _message,
             "set": _set,
+            "get": _get,
             "array": _array,
+            "range": _range,
             "concat": _concat,
             "equal": _equal,
             "lessThan": _less_than,
             "greaterThan": _greater_than,
             "lessThanOrEqual": _less_than_or_equal,
             "greaterThanOrEqual": _greater_than_or_equal,
-            "raw": _raw,
             "json": _json,
+            "doubleOpen": _double_open,
+            "doubleClose": _double_close,
+            "camelCase": _camel_case,
         }
         kwargs["called_by_template"] = True
         if "plugin_functions" in kwargs:

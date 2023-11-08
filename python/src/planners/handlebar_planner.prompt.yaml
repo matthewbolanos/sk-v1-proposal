@@ -2,12 +2,12 @@ name: HandlebarsPlanner
 template: |
   {{#message role="system"}}## Instructions
   Explain how to achieve the user's goal with the available helpers with a Handlebars template.
-  
+
   ## Example
   If the user wanted you to generate 10 random numbers and use them in another helper, you could answer with the following.{{/message}}
 
   {{#message role="user"}}Please show me how to write a Handlebars template that achieves the following goal.
-  
+
   ##Goal
   I want you to generate 10 random numbers and send them to another helper.{{/message}}
 
@@ -64,10 +64,10 @@ template: |
   {{#message role="system"}}Now let's try the real thing.{{/message}}
 
   {{#message role="user"}}Please show me how to write a Handlebars template that achieves the following goal with the available helpers.
-  
+
   ##Goal
   {{goal}}
-  
+
   ## Out-of-the-box helpers
   The following helpers are available to you:
   - {{{{raw}}}}`{{#if}}{{/if}}`{{{{/raw}}}}
@@ -76,9 +76,9 @@ template: |
   - {{{{raw}}}}`{{#with}}{{/with}}`{{{{/raw}}}}
 
   ## Loop helpers
-  If you need to loop through a list of values with `\{{#each}}`, you can use the following helpers:
-  - {{{{raw}}}}`{{range}}`{{{{/raw}}}} - Generates a range of numbers from the given start to the given end.
-  - {{{{raw}}}}`{{array}}`{{{{/raw}}}} - Generates an array of values from the given values.
+  If you need to loop through a list of values with {{{{raw}}}}`{{#each}}`{{{{/raw}}}}, you can use the following helpers:
+  - {{{{raw}}}}`{{range 0 1}}`{{{{/raw}}}} - Generates a range of numbers from the given start to the given end.
+  - {{{{raw}}}}`{{array 0 1}}`{{{{/raw}}}} - Generates an array of values from the given values.
 
   ## Comparison helpers
   If you need to compare two values, you can use the following helpers:
@@ -92,18 +92,18 @@ template: |
 
   ## Variable helpers
   If you need to create or retrieve a variable, you can use the following helpers:
-  - {{{{raw}}}}`{{set}}`{{{{/raw}}}} - Creates a variable with the given name and value. It does not print anything to the template, so you must use `\{{json}}` to print the value.
+  - {{{{raw}}}}`{{set}}`{{{{/raw}}}} - Creates a variable with the given name and value. It does not print anything to the template, so you must use `{{json}}` to print the value.
   - {{{{raw}}}}`{{get}}`{{{{/raw}}}} - Retrieves the value of a variable with the given name.
   - {{{{raw}}}}`{{json}}`{{{{/raw}}}} - Generates a JSON string from the given value; no need to use on strings.
 
   ## Custom helpers
   Lastly, you also have the following Handlebars helpers that you can use to accomplish my goal.{{#each functions}}
 
-  ### `{{doubleOpen}}{{toCamelCase PluginName}}.{{toCamelCase Name}}{{doubleClose}}`
-  Description: {{Description}}
+  ### {{doubleOpen}}name{{doubleClose}}`
+  Description: {{description}}
   Inputs:
-  {{#each Parameters}}
-    - {{Name}}: {{Type.Name}} - {{Description}} {{#if IsRequired}}(required){{else}}(optional){{/if}}
+  {{#each input_parameters}}
+    - {{name}}: {{type}} - {{description}} {{#if required}}(required){{else}}(optional){{/if}}
   {{/each}}
   Output: string - The result of the helper.{{/each}}{{/message}}
 
@@ -136,8 +136,8 @@ input_variables:
     description: The user's goal that the assistant should accomplish.
     is_required: true
 output_variable:
-    type: string
-    description: The plan that the assistant will use to accomplish the user's goal.
+  type: string
+  description: The plan that the assistant will use to accomplish the user's goal.
 execution_settings:
   - model_id_pattern: ^gpt-3\.?5-turbo
   - model_id_pattern: ^gpt-4
