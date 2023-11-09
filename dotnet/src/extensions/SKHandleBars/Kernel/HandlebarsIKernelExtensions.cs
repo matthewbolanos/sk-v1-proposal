@@ -35,7 +35,7 @@ public static class HandlebarsIKernelExtensions
         bool streaming = false
         )
     {
-        if (kernel is Kernel)
+        if (kernel is Kernel || kernel is AssistantKernel)
         {
             return await function.InvokeAsync(kernel, variables, streaming: streaming);
         }

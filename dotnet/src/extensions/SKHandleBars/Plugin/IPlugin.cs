@@ -12,18 +12,8 @@ using Microsoft.SemanticKernel.Planners;
 
 namespace Microsoft.SemanticKernel.Handlebars;
 
-public class Plugin : IPlugin
+public interface IPlugin
 {
-    public Plugin(
-        string name,
-        List<ISKFunction> functions,
-        string? description = null)
-    {
-        Name = name;
-        Description = description;
-        Functions = functions;
-    }
-
     public string Name { get; }
 
     public string? Description  { get; }
