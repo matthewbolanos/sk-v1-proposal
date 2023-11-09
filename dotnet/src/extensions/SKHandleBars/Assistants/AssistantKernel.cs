@@ -39,6 +39,7 @@ public class AssistantKernel : IKernel, IPlugin
 
 	private readonly List<ISKFunction> functions;
 
+	// Allows the creation of an assistant from a YAML file
 	public static AssistantKernel FromConfiguration(
 		string configurationFile,
 		List<IAIService>? aiServices = null,
@@ -53,6 +54,7 @@ public class AssistantKernel : IKernel, IPlugin
             .Build();
         AssistantKernelModel assistantKernelModel = deserializer.Deserialize<AssistantKernelModel>(yamlContent);
 
+		// Create the assistant kernel
 		return new AssistantKernel(
 			assistantKernelModel.Name,
 			assistantKernelModel.Description,
@@ -78,6 +80,7 @@ public class AssistantKernel : IKernel, IPlugin
 		this.AIServices = aiServices;
 		
 		// Grab the first AI service for the apiKey and model for the Assistants API
+		// This requires that the API key be made internal so it can be accessed here
 		this.apiKey = ((OpenAIChatCompletion)this.AIServices[0]).ApiKey;
 		this.model = ((OpenAIChatCompletion)this.AIServices[0]).ModelId;
 		
@@ -132,6 +135,7 @@ public class AssistantKernel : IKernel, IPlugin
 		);
 
 		// Create functions so other kernels can use this kernel as a plugin
+		// TODO: make it possible for the ask function to have additional parameters based on the instruction template
 		this.functions = new List<ISKFunction>
         {
             NativeFunction.FromNativeFunction(
@@ -258,8 +262,10 @@ public class AssistantKernel : IKernel, IPlugin
 		return new OpenAIThread(threadModel.Id, apiKey, this);
 	}
 
+	// This is the function that is provided as part of the IPlugin interface
 	private async Task<string> AskAsync(string ask, string? threadId = default)
 	{
+		// Hack to show logging in terminal
 		Console.ForegroundColor = ConsoleColor.Blue;
 		Console.Write("ProjectManager");
 		Console.ResetColor();
@@ -272,6 +278,7 @@ public class AssistantKernel : IKernel, IPlugin
 		Console.WriteLine(ask);
 		Console.ResetColor();
 
+		// Create a new thread if one is not provided
 		IThread thread;
 		if (threadId == null)
 		{
@@ -284,6 +291,7 @@ public class AssistantKernel : IKernel, IPlugin
 			thread = await GetThreadAsync(threadId);
 		}
 
+		// Add the message from the other assistant
 		thread.AddUserMessageAsync(ask);
 
 		var results = await this.RunAsync(
@@ -296,6 +304,7 @@ public class AssistantKernel : IKernel, IPlugin
 		// Concatenate all the messages from the model
 		string resultsString = String.Join("\n",modelMessages.Select(modelMessage => modelMessage.ToString()));
 
+		// Hack to show logging in terminal
 		Console.ForegroundColor = ConsoleColor.Green;
 		Console.Write(this.Name);
 		Console.ResetColor();

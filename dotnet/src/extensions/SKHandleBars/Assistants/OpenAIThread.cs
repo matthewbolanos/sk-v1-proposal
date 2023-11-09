@@ -87,6 +87,7 @@ public class OpenAIThread : IThread
         throw new NotImplementedException();
     }
 
+    // The heart of the thread interface...
     public async Task<FunctionResult> InvokeAsync(
         IKernel kernel,
         Dictionary<string, object?> variables,
@@ -94,6 +95,7 @@ public class OpenAIThread : IThread
         bool streaming = false
     )
     {
+        // TODO: implement streaming so that we can pass messages back as they are created
         if (streaming)
         {
             throw new NotImplementedException();
@@ -111,13 +113,16 @@ public class OpenAIThread : IThread
                 // Add a delay
                 await Task.Delay(300);
 
+                // If the run requires action, then we need to run the tool calls
                 if (threadRunModel.Status == "requires_action")
                 {
                     // Get the steps
                     threadRunSteps = await GetThreadRunStepsAsync(threadRunModel.Id);
                     
+                    // TODO: make this more efficient through parallelization
                     foreach(ThreadRunStepModel threadRunStep in threadRunSteps.Data)
                     {
+                        // Retrieve all of the steps that require action
                         if (threadRunStep.Status == "in_progress" && threadRunStep.StepDetails.Type == "tool_calls")
                         {
                             foreach(var toolCall in threadRunStep.StepDetails.ToolCalls)
@@ -211,6 +216,8 @@ public class OpenAIThread : IThread
 	{
         List<object> tools = new List<object>();
 
+        // Much of this code was copied from the existing function calling code
+        // Ideally it can reuse the same code without having to duplicate it
         foreach(FunctionView functionView in kernel.GetFunctionViews())
         {
             var OpenAIFunction = functionView.ToOpenAIFunction().ToFunctionDefinition();
