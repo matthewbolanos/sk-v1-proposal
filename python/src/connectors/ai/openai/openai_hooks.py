@@ -1,6 +1,8 @@
 import sys
 from typing import Any, AsyncGenerator
 
+from openai.openai_object import OpenAIObject
+
 from python.src.connectors.ai.openai.openai_chat_history import OpenAIChatHistory
 from python.src.plugins.semantic_function import SemanticFunction
 from python.src.plugins.sk_function import SKFunction
@@ -54,8 +56,11 @@ class StreamingResultToStdOutHook(HookBase):
             if RESPONSE_OBJECT_KEY in result:
                 if not isinstance(result[RESPONSE_OBJECT_KEY], AsyncGenerator):
                     return results, functions, variables, request_settings, kwargs
-            completion = await self.output_openai_object(result[RESPONSE_OBJECT_KEY])
-            result[self.result_key] = completion
+            if isinstance(result[RESPONSE_OBJECT_KEY], OpenAIObject):
+                completion = await self.output_openai_object(
+                    result[RESPONSE_OBJECT_KEY]
+                )
+                result[self.result_key] = completion
         return results, functions, variables, request_settings, kwargs
 
 

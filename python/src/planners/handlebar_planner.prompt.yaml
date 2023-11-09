@@ -97,12 +97,12 @@ template: |
   - {{{{raw}}}}`{{json}}`{{{{/raw}}}} - Generates a JSON string from the given value; no need to use on strings.
 
   ## Custom helpers
-  Lastly, you also have the following Handlebars helpers that you can use to accomplish my goal.{{#each functions}}
+  Lastly, you also have the following Handlebars helpers that you can use to accomplish my goal. Make sure to use the parameter name when you call these. There are no other helpers, so do not invent new ones.{{#each functions}}
 
-  ### {{doubleOpen}}name{{doubleClose}}`
+  ### {{doubleOpen}}{{fully_qualified_name}}{{doubleClose}}`
   Description: {{description}}
   Inputs:
-  {{#each input_parameters}}
+  {{#each Parameters}}
     - {{name}}: {{type}} - {{description}} {{#if required}}(required){{else}}(optional){{/if}}
   {{/each}}
   Output: string - The result of the helper.{{/each}}{{/message}}
@@ -140,4 +140,6 @@ output_variable:
   description: The plan that the assistant will use to accomplish the user's goal.
 execution_settings:
   - model_id_pattern: ^gpt-3\.?5-turbo
+    max_tokens: 1000
   - model_id_pattern: ^gpt-4
+    max_tokens: 1000

@@ -27,6 +27,8 @@ def _set(this, *args, **kwargs):
 
 
 def _get(this, *args, **kwargs):
+    if len(args) == 0:
+        return ""
     return this.context.get(args[0], "")
 
 
@@ -103,7 +105,9 @@ class RunThread(threading.Thread):
         super().__init__()
 
     def run(self):
-        self.result = asyncio.run(self.func(variables=self.kwargs, **self.fixed_kwargs))
+        kwa = {"variables": self.kwargs}
+        kwa.update(self.fixed_kwargs)
+        self.result = asyncio.run(self.func(*self.args, **kwa))
 
 
 def create_func(function, fixed_kwargs):

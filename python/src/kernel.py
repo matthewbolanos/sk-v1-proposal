@@ -9,7 +9,6 @@ from semantic_kernel.connectors.ai import (
 )
 
 from python.src.hooks.hook_base import HookBase
-from python.src.plugins.semantic_function import SemanticFunction
 
 from .plugins import SKFunction, SKPlugin
 
@@ -63,18 +62,17 @@ class newKernel(Kernel):
         if not isinstance(functions, list):
             functions = [functions]
         for function in functions:
-            if isinstance(function, SemanticFunction):
-                results.append(
-                    await function.run_async(
-                        variables,
-                        services=self.services,
-                        request_settings=request_settings,
-                        plugin_functions=self.fqn_functions,
-                        **kwargs,
-                    )
+            if "plugin_functions" in kwargs:
+                kwargs.pop("plugin_functions")
+            results.append(
+                await function.run_async(
+                    variables,
+                    services=self.services,
+                    request_settings=request_settings,
+                    plugin_functions=self.fqn_functions,
+                    **kwargs,
                 )
-                continue
-            results.append(await function.run_async(variables, **kwargs))
+            )
         for hook in self.hooks:
             _LOGGER.info("Running hook: %s", hook.name)
             results, variables, _, _, _ = await hook.on_invoke_end(

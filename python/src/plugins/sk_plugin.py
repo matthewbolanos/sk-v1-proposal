@@ -16,6 +16,8 @@ class SKPlugin(SKBaseModel):
         else:
             functions_dict = {}
         super().__init__(name=name, functions=functions_dict)
+        for function in functions:
+            function.plugin_name = name
 
     @classmethod
     def from_class(cls, name: str, class_object: Any) -> "SKPlugin":
@@ -29,6 +31,7 @@ class SKPlugin(SKBaseModel):
         return cls(name, functions)
 
     def add_function(self, function: SKFunction):
+        function.plugin_name = self.name
         self.functions[function.name] = function
 
     def add_function_from_class(self, class_object: Any):
@@ -39,10 +42,12 @@ class SKPlugin(SKBaseModel):
             and hasattr(function, "__sk_function__")
             and function.__sk_function__
         ]
+        for function in functions:
+            function.plugin_name = self.name
         self.functions.update(
             {function.name: NativeFunction(function) for function in functions}
         )
 
     @property
     def fqn_functions(self) -> dict[str, Any]:
-        return {f"{self.name}_{name}": func for name, func in self.functions.items()}
+        return {func.fully_qualified_name: func for func in self.functions.values()}

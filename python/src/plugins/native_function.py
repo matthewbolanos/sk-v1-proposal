@@ -54,7 +54,7 @@ class NativeFunction(SKFunction):
         )
         self.function = function
 
-    async def run_async(self, variables, **kwargs) -> dict:
+    async def run_async(self, *args, **kwargs) -> dict:
         if asyncio.iscoroutinefunction(self.function):
-            return await self.function(variables, **kwargs)
-        return self.function(variables, **kwargs)
+            return await self.function(*args, **kwargs)
+        return self.function(*args, **kwargs)
