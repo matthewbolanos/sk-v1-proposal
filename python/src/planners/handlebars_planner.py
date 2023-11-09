@@ -28,7 +28,6 @@ class HandleBarsPlanner(SKBaseModel):
         self, goal: str, variables: dict[str, Any] | None = None
     ) -> HandleBarsPlan:
         # read template
-        print(os.getcwd())
         planner_function = SemanticFunction.from_path(
             path=os.getcwd() + "/python/src/planners/handlebar_planner.prompt.yaml"
         )
@@ -48,7 +47,6 @@ class HandleBarsPlanner(SKBaseModel):
             },
             request_settings={"stream": False},
         )
-        # example plan: 'Steps to achieve the goal:\n1. Set a variable named "sum" to the sum of the numbers 3 and 3 (Guess: 6)\n2. Print the value of the "sum" variable\n\nHandlebars Template:\n```\n{{set name="sum" value=(add 3 3)}}\n1. Set a variable named "sum" to the sum of the numbers 3 and 3: {{sum}}.\n```'
         return HandleBarsPlan(kernel=self.kernel, template=plan["result"])
 
     def _should_include_function(self, plugin: str, function: str) -> bool:

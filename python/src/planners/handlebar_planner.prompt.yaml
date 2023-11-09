@@ -1,8 +1,25 @@
 name: HandlebarsPlanner
 template: |
+  {{#if last_error}}
+  {{#message role="user"}}Can you help me write a Handlebars template that achieves the following goal?{{/message}}
+  {{#message role="user"}}{{goal}}{{/message}}
+  {{#message role="assistant"}}```
+  {{last_plan}}
+  ```{{/message}}
+  {{#message role="user"}}This plan doesn't work, I get this error: "{{last_error}}"{{/message}}
+  {{#message role="assistant"}}I'm sorry, let me try to fix it.{{/message}}
   {{#message role="system"}}## Instructions
-  Explain how to achieve the user's goal with the available helpers with a Handlebars template.
+  A previous agent tried to create a Handlebars template, but it was invalid. You must completely rewrite the template so that it no longer has an error by fixing the syntax or by using the correct methods{{/message}}
 
+  {{else}}
+  
+  {{#message role="user"}}Can you help me write a Handlebars template that achieves the following goal?{{/message}}
+  {{#message role="user"}}{{goal}}{{/message}}
+  {{#message role="system"}}## Instructions
+  Create a Handlebars template that describes the steps necessary to accomplish the user's goal in a numbered list.
+  {{/message}}
+  {{/if}}
+  {{#message role="system"}}
   ## Example
   If the user wanted you to generate 10 random numbers and use them in another helper, you could answer with the following.{{/message}}
 
@@ -135,6 +152,14 @@ input_variables:
     type: string
     description: The user's goal that the assistant should accomplish.
     is_required: true
+  - name: last_plan
+    type: string
+    description: the previous plan if available
+    is_required: false
+  - name: last_error
+    type: string
+    description: the previous error if available
+    is_required: false    
 output_variable:
   type: string
   description: The plan that the assistant will use to accomplish the user's goal.

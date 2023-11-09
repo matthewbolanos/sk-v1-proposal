@@ -96,25 +96,21 @@ def _camel_case(this, *args, **kwargs):
 
 class RunThread(threading.Thread):
     # TODO: replace with better solution and/or figure out why asyncio.run will not work, or move to handlebars implementation that van handle async
-    def __init__(self, func, fixed_kwargs, args, kwargs):
+    def __init__(self, func, args, kwargs):
         self.func = func
         self.args = args
-        self.fixed_kwargs = fixed_kwargs
         self.kwargs = kwargs
         self.result = None
         super().__init__()
 
     def run(self):
-        kwa = {"variables": self.kwargs}
-        kwa.update(self.fixed_kwargs)
-        self.result = asyncio.run(self.func(*self.args, **kwa))
+        self.result = asyncio.run(self.func(*self.args, **self.kwargs))
 
 
 def create_func(function, fixed_kwargs):
     def func(context, *args, **kwargs):
-        thread = RunThread(
-            func=function.run_async, fixed_kwargs=fixed_kwargs, args=args, kwargs=kwargs
-        )
+        fixed_kwargs["variables"] = kwargs
+        thread = RunThread(func=function.run_async, args=args, kwargs=fixed_kwargs)
         thread.start()
         thread.join()
         return thread.result

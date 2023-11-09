@@ -12,7 +12,7 @@ class SKFunction(SKBaseModel):
     plugin_name: str = ""
 
     @abstractmethod
-    async def run_async(self, variables, **kwargs) -> dict:
+    async def run_async(self, variables, *args, **kwargs) -> dict:
         pass
 
     @property

@@ -94,6 +94,7 @@ class SemanticFunction(SKFunction):
         variables,
         services=None,
         request_settings: dict[str, any] | None = None,
+        *args,
         **kwargs,
     ) -> dict:
         if "service" not in kwargs:
