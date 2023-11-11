@@ -17,7 +17,7 @@ Configure an Azure OpenAI endpoint
 cd ./dotnet/samples/06-Assistants
 
 dotnet user-secrets set "OpenAI:ApiKey" "... your OpenAI key ..."
-dotnet user-secrets set ""Bing:ApiKey" "... your Bing key ..."
+dotnet user-secrets set "Bing:ApiKey" "... your Bing key ..."
 ```
 
 ## Running the sample
