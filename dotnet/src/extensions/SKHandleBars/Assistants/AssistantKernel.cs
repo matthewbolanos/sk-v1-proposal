@@ -13,19 +13,15 @@ using YamlDotNet.Serialization;
 
 namespace Microsoft.SemanticKernel.Handlebars;
 
-public class AssistantKernel : IKernel, IPlugin
+public class AssistantKernel : Kernel, IPlugin
 {
-	private readonly Microsoft.SemanticKernel.Kernel kernel;
-
-	private readonly List<IPlugin> plugins;
-	private readonly List<IAIService> AIServices;
 
 	public string Id { get; private set; }
 	public string Name { get; }
 
     public string? Description { get; }
-
-    public string? Instructions { get; }
+		
+    private string? instructions { get; }
 
     IEnumerable<ISKFunction> IPlugin.Functions {
 		get { return this.functions; }
@@ -38,6 +34,8 @@ public class AssistantKernel : IKernel, IPlugin
 	private readonly string model;
 
 	private readonly List<ISKFunction> functions;
+
+    private readonly ModelRequestXmlConverter modelRequestXmlConverter = new();
 
 	// Allows the creation of an assistant from a YAML file
 	public static AssistantKernel FromConfiguration(
@@ -72,31 +70,16 @@ public class AssistantKernel : IKernel, IPlugin
 		List<IAIService>? aiServices = null,
 		List<IPlugin>? plugins = null,
 		List<IPromptTemplateEngine>? promptTemplateEngines = null
-	)
+	) : base(aiServices, plugins, promptTemplateEngines)
 	{
 		this.Name = name;
 		this.Description = description;
-		this.Instructions = instructions;
-		this.AIServices = aiServices;
+		this.instructions = instructions;
 		
 		// Grab the first AI service for the apiKey and model for the Assistants API
 		// This requires that the API key be made internal so it can be accessed here
 		this.apiKey = ((OpenAIChatCompletion)this.AIServices[0]).ApiKey;
 		this.model = ((OpenAIChatCompletion)this.AIServices[0]).ModelId;
-		
-		// Create a function collection using the plugins
-		FunctionCollection functionCollection = new FunctionCollection();
-		this.plugins = plugins ?? new List<IPlugin>();
-		if (plugins != null)
-		{
-			foreach(IPlugin plugin in plugins)
-			{
-				foreach(ISKFunction function in plugin.Functions)
-				{
-					functionCollection.AddFunction(plugin.Name, function);
-				}
-			}
-		}
 
 		// Create an AI service provider using the AI services
 		AIServiceCollection services = new AIServiceCollection();
@@ -112,27 +95,6 @@ public class AssistantKernel : IKernel, IPlugin
 				}
 			}
 		}
-		
-		// Initialize the prompt template engine
-		IPromptTemplateEngine promptTemplateEngine;
-		if (promptTemplateEngines != null && promptTemplateEngines.Count > 0)
-		{
-			promptTemplateEngine = promptTemplateEngines[0];
-		}
-		else
-		{
-			promptTemplateEngine = new HandlebarsPromptTemplateEngine();
-		}
-
-		// Create underlying kernel
-		this.kernel = new SemanticKernel.Kernel(
-			functionCollection,
-			services.Build(),
-			promptTemplateEngine,
-			null!,
-			NullHttpHandlerFactory.Instance,
-			null
-		);
 
 		// Create functions so other kernels can use this kernel as a plugin
 		// TODO: make it possible for the ask function to have additional parameters based on the instruction template
@@ -160,6 +122,15 @@ public class AssistantKernel : IKernel, IPlugin
         };
 	}
 
+	private async Task<ModelRequest> GetInstructionsAsync(
+		Dictionary<string, object?> variables = default
+	)
+	{
+		string renderedTemplate = await kernel.PromptTemplateEngine.RenderAsync(this, this.instructions, variables);
+		renderedTemplate = "<request>" + renderedTemplate + "</request>";
+		return modelRequestXmlConverter.ParseXml(renderedTemplate, defaultRole: "system");
+	}
+
 	public async Task<FunctionResult> RunAsync(
 		IThread thread,
 		Dictionary<string, object?> variables = default,
@@ -170,8 +141,29 @@ public class AssistantKernel : IKernel, IPlugin
 		// Initialize the agent if it doesn't exist
 		await InitializeAgentAsync();
 
+		// Get the instructions for the assistant
+		var renderedPrompt = await GetInstructionsAsync(variables);
+
+		// Check if the first message in the instructions is a system message
+		if (renderedPrompt.Messages[0].Role != "system")
+		{
+			throw new Exception("The first message in the instructions must be a system message");
+		}
+		string instructions = renderedPrompt.Messages[0].Content.ToString()!;
+		
+		// Check if there is a user message in the rendered prompt
+		if (renderedPrompt.Messages.Count > 1 && renderedPrompt.Messages[1].Role == "user")
+		{
+			// Add the user message to the thread
+			thread.AddUserMessageAsync(renderedPrompt.Messages[1].Content.ToString()!);
+		}
+
+		// Clone variables and add the instructions (check if variables is null first)
+		var variablesWithInstructions = variables == null ? new Dictionary<string, object?>() : new Dictionary<string, object?>(variables);
+		variablesWithInstructions.Add("instructions", instructions);
+
 		// Invoke the thread
-		return await thread.InvokeAsync(this, variables, streaming, cancellationToken);
+		return await thread.InvokeAsync(this, variablesWithInstructions, streaming, cancellationToken);
 	}
 
 	public List<FunctionView> GetFunctionViews()
@@ -268,7 +260,7 @@ public class AssistantKernel : IKernel, IPlugin
 	}
 
 	// This is the function that is provided as part of the IPlugin interface
-	private async Task<string> AskAsync(string ask, string? threadId = null)
+	private async Task<string> AskAsync(string ask, string? threadId = null, Dictionary<string, object?>? variables = null)
 	{
 		// Hack to show logging in terminal
 		Console.ForegroundColor = ConsoleColor.Blue;
@@ -296,12 +288,12 @@ public class AssistantKernel : IKernel, IPlugin
 			thread = await GetThreadAsync(threadId);
 		}
 
-		// Add the message from the other assistant
+		// Add the ask to the thread
 		thread.AddUserMessageAsync(ask);
 
 		var results = await this.RunAsync(
 			thread,
-			variables: new Dictionary<string, object?>() {}
+			variables: variables
 		);
 
 		List<ModelMessage> modelMessages = results.GetValue<List<ModelMessage>>()!;
@@ -331,75 +323,13 @@ public class AssistantKernel : IKernel, IPlugin
 		return JsonSerializer.Serialize(new AskResponse() {
 			ThreadId = thread.Id,
 			Response = resultsString,
-			Instructions = "Reply back to this thread with the ReplyBack function if you need to continue the conversation " + this.Name
+			Instructions = "Use the "+this.Name+"-ReplyBack function if you need to continue the conversation on this thread"
 		});
 	}
 
-	private async Task<string> ReplyBackAsync(string reply, string threadId)
+	private async Task<string> ReplyBackAsync(string reply, string threadId, Dictionary<string, object?>? variables = null)
 	{
-		// Hack to show logging in terminal
-		Console.ForegroundColor = ConsoleColor.Blue;
-		Console.Write("ProjectManager");
-		Console.ResetColor();
-		Console.Write(" to ");
-		Console.ForegroundColor = ConsoleColor.Green;
-		Console.Write(this.Name);
-		Console.ResetColor();
-		Console.Write(" > ");
-		Console.ForegroundColor = ConsoleColor.Blue;
-		Console.WriteLine(reply);
-		Console.ResetColor();
-
-		// Create a new thread if one is not provided
-		IThread thread;
-		if (threadId == null)
-		{
-			// Create new thread
-			thread = await CreateThreadAsync();
-		}
-		else
-		{
-			// Retrieve existing thread
-			thread = await GetThreadAsync(threadId);
-		}
-
-		// Add the message from the other assistant
-		thread.AddUserMessageAsync(reply);
-
-		var results = await this.RunAsync(
-			thread,
-			variables: new Dictionary<string, object?>() {}
-		);
-
-		List<ModelMessage> modelMessages = results.GetValue<List<ModelMessage>>()!;
-
-		// Concatenate all the messages from the model
-		string resultsString = String.Join("\n",modelMessages.Select(modelMessage => modelMessage.ToString()));
-
-		// Hack to show logging in terminal
-		Console.ForegroundColor = ConsoleColor.Green;
-		Console.Write(this.Name);
-		Console.ResetColor();
-		Console.Write(" to ");
-		Console.ForegroundColor = ConsoleColor.Blue;
-		Console.Write("ProjectManager");
-		Console.ResetColor();
-		Console.Write(" > ");
-		Console.ForegroundColor = ConsoleColor.Green;
-		Console.WriteLine(resultsString);
-		Console.ResetColor();
-
-		// TODO: return AskResponse object once kernel supports complex types
-		// return new AskResponse() {
-		// 	ThreadId = thread.Id,
-		// 	Response = resultsString
-		// };
-
-		return JsonSerializer.Serialize(new AskResponse() {
-			ThreadId = thread.Id,
-			Response = resultsString,
-			Instructions = "Reply back to this thread with the ReplyBack function if you need to continue the conversation with " + this.Name
-		});
+		return await this.AskAsync(reply, threadId, variables);
 	}
 
 

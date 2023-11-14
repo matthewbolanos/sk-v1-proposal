@@ -1,0 +1,13 @@
+name: TextToImageTask
+template: |
+  <message role="user">
+  How much money would I have if I started with 23,500 dollars in the stock market and let it grow for 20 years with an average annual return of 7.5%?
+  </message>
+template_format: handlebars
+description: A function that answers a math problem.
+input_variables:
+output_variable:
+    type: Image
+    description: The generated image.
+execution_settings:
+  - model_id_pattern: ^wizard-math

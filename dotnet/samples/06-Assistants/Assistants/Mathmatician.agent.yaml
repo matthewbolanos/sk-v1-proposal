@@ -1,8 +1,15 @@
 name: Mathmatician
 template: |
-  You are a mathmatician. Use the math functions to answer the request.
+  <message role="system">
+  You are a mathmatician. Use the math functions to answer the request. Use the instructions to guide the steps to take with the math functions.
+  </message>
 template_format: handlebars
 description: An assistant that answers math problems.
+input_variables:
+  - name: mathProblem
+    type: string
+    description: The math problem to solve
+    is_required: true
 execution_settings:
   - model_id_pattern: ^gpt-4
   - model_id_pattern: ^gpt-3\.?5-turbo

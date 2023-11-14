@@ -19,11 +19,11 @@ namespace Microsoft.SemanticKernel.Handlebars;
 
 public class Kernel : IKernel
 {
-	private readonly Microsoft.SemanticKernel.Kernel kernel;
+	protected readonly Microsoft.SemanticKernel.Kernel kernel;
 	public ISKFunction? EntryPoint { get; }
 
-	private readonly List<IPlugin> plugins;
-	private readonly List<IAIService> AIServices;
+	protected readonly List<IPlugin> plugins;
+	protected readonly List<IAIService> AIServices;
 
 	public Kernel(
 		List<IAIService>? aiServices = null,

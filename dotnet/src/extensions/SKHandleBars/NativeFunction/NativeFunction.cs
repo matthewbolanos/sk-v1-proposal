@@ -331,6 +331,7 @@ public sealed class NativeFunction : ISKFunction, IDisposable
             object?[] args = parameterFuncs.Length != 0 ? new object?[parameterFuncs.Length] : Array.Empty<object?>();
             for (int i = 0; i < args.Length; i++)
             {
+                
                 args[i] = parameterFuncs[i](variables, cancellationToken);
             }
 
@@ -406,9 +407,10 @@ public sealed class NativeFunction : ISKFunction, IDisposable
                     {
                         return JsonSerializer.Deserialize(value.ToString()!, type);
                     }
-                    else if (value is JsonElement element && element.ValueKind == JsonValueKind.String)
+                    // if the parameter is a JsonElement, we need to convert it to the right type using a JSON deserializer.
+                    else if (value is JsonElement element)
                     {
-                        return element.ToString();
+                        return JsonSerializer.Deserialize(element.GetRawText(), type);
                     }
                     else
                     {

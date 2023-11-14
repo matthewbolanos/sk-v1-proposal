@@ -69,7 +69,6 @@ public sealed class FunctionResult
     }
 
 
-
     public T? GetValue<T>()
     {
         if (isStreaming)

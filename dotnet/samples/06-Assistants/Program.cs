@@ -44,7 +44,7 @@ IPlugin designer = AssistantKernel.FromConfiguration(
 AssistantKernel projectManager = AssistantKernel.FromConfiguration(
     currentDirectory + "/Assistants/ProjectManager.agent.yaml",
     aiServices: new () { gpt4Turbo },
-    plugins: new () { researcher }
+    plugins: new () { researcher, mathmatician }
 );
 
 IThread thread = await projectManager.CreateThreadAsync();

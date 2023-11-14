@@ -104,7 +104,7 @@ public class OpenAIThread : IThread
         if (kernel is AssistantKernel assistantKernel)
         {
             // Create a run on the thread
-            ThreadRunModel threadRunModel = await CreateThreadRunAsync(assistantKernel);
+            ThreadRunModel threadRunModel = await CreateThreadRunAsync(assistantKernel, variables);
             ThreadRunStepListModel threadRunSteps;
 
             // Poll the run until it is complete
@@ -204,7 +204,7 @@ public class OpenAIThread : IThread
         string[] nameParts = name.Split("-");
 
         // get function from kernel
-        var function = kernel.Functions.GetFunction(nameParts[0], nameParts[1]);
+        var function = ((Kernel)kernel).Functions.GetFunction(nameParts[0], nameParts[1]);
         // TODO: change back to Dictionary<string, object>
         Dictionary<string, object> variables = JsonSerializer.Deserialize<Dictionary<string, object>>(arguments)!;
 
@@ -213,7 +213,7 @@ public class OpenAIThread : IThread
             variables: variables!
         );
 
-        return results.GetValue<string>()!;
+        return results.ToString();
     }
 
     private async Task<ThreadRunModel> SubmitToolOutputsToRun(string runId, Dictionary<string, object?> toolCallResults)
@@ -244,7 +244,7 @@ public class OpenAIThread : IThread
         return JsonSerializer.Deserialize<ThreadRunModel>(responseBody)!;
     }
 
-    private async Task<ThreadRunModel> CreateThreadRunAsync(AssistantKernel kernel)
+    private async Task<ThreadRunModel> CreateThreadRunAsync(AssistantKernel kernel, Dictionary<string, object?>? variables = default)
     {
         List<object> tools = new List<object>();
 
@@ -258,11 +258,18 @@ public class OpenAIThread : IThread
             var paramProperties = new Dictionary<string, object>();
             foreach (var param in functionView.Parameters)
             {
+                // if double or int, then type is number
+                var type = param.Type.Name.ToLower();
+                if (type == "double" || type == "int" || type == "int32" || type == "int64")
+                {
+                    type = "number";
+                }
+
                 paramProperties.Add(
                     param.Name,
                     new
                     {
-                        type = param.Type.Name.ToLower(),
+                        type = type,
                         description = param.Description,
                     });
 
@@ -289,10 +296,12 @@ public class OpenAIThread : IThread
             });
         }
 
+        string assistantInstructions = variables?["instructions"]?.ToString() ?? "";
+
         var requestData = new
         {
             assistant_id = kernel.Id,
-            instructions = kernel.Instructions,
+            instructions = assistantInstructions,
             tools = tools
         };
 

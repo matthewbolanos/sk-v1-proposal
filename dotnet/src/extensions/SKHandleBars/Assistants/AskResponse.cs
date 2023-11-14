@@ -10,6 +10,6 @@ public class AskResponse
     [JsonPropertyName("response")]
     public string Response { get; set; }
 
-    [JsonPropertyName("instructions")]
+    [JsonPropertyName("system_instructions")]
     public string Instructions { get; set; }
 }

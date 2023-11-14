@@ -42,7 +42,7 @@ public class ModelRequestXmlConverter
         throw new NotImplementedException();
     }
 
-    public ModelRequest ParseXml(string xml)
+    public ModelRequest ParseXml(string xml, string defaultRole = "user")
     {
         XmlDocument xmlDoc = new();
         xmlDoc.LoadXml(xml);
@@ -50,6 +50,14 @@ public class ModelRequestXmlConverter
         List<ModelMessage> modelMessages = new();
         Dictionary<string, object> modelContext = new();
         XmlNode? root = xmlDoc.DocumentElement;
+
+        // Check if the root just has one text node
+        if (root != null && root.ChildNodes.Count == 1 && root.FirstChild?.NodeType == XmlNodeType.Text)
+        {
+            string text = root.FirstChild.Value!;
+            modelMessages.Add(new ModelMessage(text, defaultRole));
+            return new ModelRequest(modelMessages, modelContext);
+        }
 
         // Check if the root is not null
         if (root != null)
