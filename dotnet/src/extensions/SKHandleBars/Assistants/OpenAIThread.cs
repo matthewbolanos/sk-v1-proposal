@@ -21,7 +21,7 @@ public class OpenAIThread : IThread
     private string apiKey;
     private const string _url = "https://api.openai.com/v1/threads";
 
-    private readonly HttpClient client = new ();
+    private readonly HttpClient client = new();
 
     public OpenAIThread(string id, string apiKey, AssistantKernel primaryAssistant)
     {
@@ -35,7 +35,7 @@ public class OpenAIThread : IThread
     {
         await AddMessageAsync(new ModelMessage(message));
     }
-    
+
     public async Task AddMessageAsync(ModelMessage message)
     {
 
@@ -58,7 +58,7 @@ public class OpenAIThread : IThread
 
     public async Task<ModelMessage> RetrieveMessageAsync(string messageId)
     {
-        var url = $"{_url}/{Id}/messages/"+messageId;
+        var url = $"{_url}/{Id}/messages/" + messageId;
         using var httpRequestMessage = HttpRequest.CreateGetRequest(url);
 
         httpRequestMessage.Headers.Add("Authorization", $"Bearer {this.apiKey}");
@@ -69,7 +69,7 @@ public class OpenAIThread : IThread
         ThreadMessageModel message = JsonSerializer.Deserialize<ThreadMessageModel>(responseBody);
 
         List<object> content = new List<object>();
-        foreach(var item in message.Content)
+        foreach (var item in message.Content)
         {
             content.Add(item.Text.Value);
         }
@@ -118,21 +118,33 @@ public class OpenAIThread : IThread
                 {
                     // Get the steps
                     threadRunSteps = await GetThreadRunStepsAsync(threadRunModel.Id);
-                    
+
                     // TODO: make this more efficient through parallelization
-                    foreach(ThreadRunStepModel threadRunStep in threadRunSteps.Data)
+                    foreach (ThreadRunStepModel threadRunStep in threadRunSteps.Data)
                     {
                         // Retrieve all of the steps that require action
                         if (threadRunStep.Status == "in_progress" && threadRunStep.StepDetails.Type == "tool_calls")
                         {
-                            foreach(var toolCall in threadRunStep.StepDetails.ToolCalls)
-                            {
-                                // Run function
-                                var result = await InvokeFunctionCallAsync(kernel, toolCall.Function.Name, toolCall.Function.Arguments);
+                            // Create a list to hold the tasks
+                            var tasks = new List<Task<KeyValuePair<string, object?>>>();
 
-                                // Update the thread run
-                                threadRunModel = await SubmitToolOutputsToRun(threadRunModel.Id, toolCall.Id, result);
+                            foreach (var toolCall in threadRunStep.StepDetails.ToolCalls)
+                            {
+                                // Create a task for each tool call
+                                var task = InvokeFunctionCallAsync(kernel, toolCall.Function.Name, toolCall.Function.Arguments)
+                                        .ContinueWith(t => new KeyValuePair<string, object?>(toolCall.Id, t.Result));
+
+                                tasks.Add(task);
                             }
+
+                            // Wait for all tasks to complete
+                            var results = await Task.WhenAll(tasks);
+
+                            // Create the dictionary from the completed tasks results
+                            Dictionary<string, object?> toolCallResults = results.ToDictionary(t => t.Key, t => t.Value);
+
+                            // Update the thread run
+                            threadRunModel = await SubmitToolOutputsToRun(threadRunModel.Id, toolCallResults);
                         }
                     }
                 }
@@ -155,14 +167,29 @@ public class OpenAIThread : IThread
 
             // Check step details
             List<ModelMessage> messages = new List<ModelMessage>();
-            foreach(ThreadRunStepModel threadRunStep in threadRunSteps.Data)
+
+            if (threadRunSteps?.Data != null)
             {
-                if (threadRunStep.StepDetails.Type == "message_creation")
+                foreach (ThreadRunStepModel threadRunStep in threadRunSteps.Data)
                 {
-                    // Get message Id
-                    var messageId = threadRunStep.StepDetails.MessageCreation.MessageId;
-                    ModelMessage message = await this.RetrieveMessageAsync(messageId);
-                    messages.Add(message);
+                    // Ensure that StepDetails and MessageCreation are not null
+                    if (threadRunStep?.StepDetails?.Type == "message_creation" && threadRunStep.StepDetails.MessageCreation != null)
+                    {
+                        // Get message Id
+                        var messageId = threadRunStep.StepDetails.MessageCreation.MessageId;
+
+                        // Ensure messageId is not null
+                        if (!string.IsNullOrEmpty(messageId))
+                        {
+                            ModelMessage message = await this.RetrieveMessageAsync(messageId);
+
+                            // Add the message to the list if it's not null
+                            if (message != null)
+                            {
+                                messages.Add(message);
+                            }
+                        }
+                    }
                 }
             }
             return new FunctionResult(this.Name, this.PluginName, messages);
@@ -189,19 +216,24 @@ public class OpenAIThread : IThread
         return results.GetValue<string>()!;
     }
 
-    private async Task<ThreadRunModel> SubmitToolOutputsToRun(string runId, string toolCallId, string output)
+    private async Task<ThreadRunModel> SubmitToolOutputsToRun(string runId, Dictionary<string, object?> toolCallResults)
     {
+        List<object> tool_outputs = new List<object>();
+        foreach(var toolCallResult in toolCallResults)
+        {
+            tool_outputs.Add(new
+            {
+                tool_call_id = toolCallResult.Key,
+                output = toolCallResult.Value
+            });
+        }
+        
         var requestData = new
         {
-            tool_outputs = new [] {
-                new {
-                    tool_call_id = toolCallId,
-                    output = output
-                }
-            } 
+            tool_outputs = tool_outputs
         };
 
-        string url = "https://api.openai.com/v1/threads/"+this.Id+"/runs/"+runId+"/submit_tool_outputs";
+        string url = "https://api.openai.com/v1/threads/" + this.Id + "/runs/" + runId + "/submit_tool_outputs";
         using var httpRequestMessage = HttpRequest.CreatePostRequest(url, requestData);
         httpRequestMessage.Headers.Add("Authorization", $"Bearer {this.apiKey}");
         httpRequestMessage.Headers.Add("OpenAI-Beta", "assistants=v1");
@@ -213,15 +245,15 @@ public class OpenAIThread : IThread
     }
 
     private async Task<ThreadRunModel> CreateThreadRunAsync(AssistantKernel kernel)
-	{
+    {
         List<object> tools = new List<object>();
 
         // Much of this code was copied from the existing function calling code
         // Ideally it can reuse the same code without having to duplicate it
-        foreach(FunctionView functionView in kernel.GetFunctionViews())
+        foreach (FunctionView functionView in kernel.GetFunctionViews())
         {
             var OpenAIFunction = functionView.ToOpenAIFunction().ToFunctionDefinition();
-            
+
             var requiredParams = new List<string>();
             var paramProperties = new Dictionary<string, object>();
             foreach (var param in functionView.Parameters)
@@ -240,9 +272,11 @@ public class OpenAIThread : IThread
                 }
             }
 
-            tools.Add(new {
+            tools.Add(new
+            {
                 type = "function",
-                function = new {
+                function = new
+                {
                     name = OpenAIFunction.Name,
                     description = OpenAIFunction.Description,
                     parameters = new
@@ -255,52 +289,52 @@ public class OpenAIThread : IThread
             });
         }
 
-		var requestData = new
-		{
-			assistant_id = kernel.Id,
-			instructions = kernel.Instructions,
+        var requestData = new
+        {
+            assistant_id = kernel.Id,
+            instructions = kernel.Instructions,
             tools = tools
-		};
+        };
 
         string requestDataJson = JsonSerializer.Serialize(requestData);
 
-		string url = "https://api.openai.com/v1/threads/"+this.Id+"/runs";
+        string url = "https://api.openai.com/v1/threads/" + this.Id + "/runs";
         using var httpRequestMessage = HttpRequest.CreatePostRequest(url, requestData);
         httpRequestMessage.Headers.Add("Authorization", $"Bearer {this.apiKey}");
         httpRequestMessage.Headers.Add("OpenAI-Beta", "assistants=v1");
 
         var response = await this.client.SendAsync(httpRequestMessage).ConfigureAwait(false);
 
-		string responseBody = await response.Content.ReadAsStringAsync();
-		return JsonSerializer.Deserialize<ThreadRunModel>(responseBody)!;
-	}
+        string responseBody = await response.Content.ReadAsStringAsync();
+        return JsonSerializer.Deserialize<ThreadRunModel>(responseBody)!;
+    }
 
-	private async Task<ThreadRunModel> GetThreadRunAsync(string runId)
-	{
-		string url = "https://api.openai.com/v1/threads/"+this.Id+"/runs/"+runId;
-		using var httpRequestMessage2 = HttpRequest.CreateGetRequest(url);
+    private async Task<ThreadRunModel> GetThreadRunAsync(string runId)
+    {
+        string url = "https://api.openai.com/v1/threads/" + this.Id + "/runs/" + runId;
+        using var httpRequestMessage2 = HttpRequest.CreateGetRequest(url);
 
-		httpRequestMessage2.Headers.Add("Authorization", $"Bearer {this.apiKey}");
-		httpRequestMessage2.Headers.Add("OpenAI-Beta", "assistants=v1");
+        httpRequestMessage2.Headers.Add("Authorization", $"Bearer {this.apiKey}");
+        httpRequestMessage2.Headers.Add("OpenAI-Beta", "assistants=v1");
 
-		var response = await this.client.SendAsync(httpRequestMessage2).ConfigureAwait(false);
+        var response = await this.client.SendAsync(httpRequestMessage2).ConfigureAwait(false);
 
-		string responseBody = await response.Content.ReadAsStringAsync();
-		return JsonSerializer.Deserialize<ThreadRunModel>(responseBody)!;
-	}
+        string responseBody = await response.Content.ReadAsStringAsync();
+        return JsonSerializer.Deserialize<ThreadRunModel>(responseBody)!;
+    }
 
-	private async Task<ThreadRunStepListModel> GetThreadRunStepsAsync(string runId)
-	{
-		string url = "https://api.openai.com/v1/threads/"+this.Id+"/runs/"+runId+"/steps";
+    private async Task<ThreadRunStepListModel> GetThreadRunStepsAsync(string runId)
+    {
+        string url = "https://api.openai.com/v1/threads/" + this.Id + "/runs/" + runId + "/steps";
         using var httpRequestMessage = HttpRequest.CreateGetRequest(url);
 
         httpRequestMessage.Headers.Add("Authorization", $"Bearer {this.apiKey}");
         httpRequestMessage.Headers.Add("OpenAI-Beta", "assistants=v1");
 
         var response = await this.client.SendAsync(httpRequestMessage).ConfigureAwait(false);
-		string responseBody = await response.Content.ReadAsStringAsync();
-		return JsonSerializer.Deserialize<ThreadRunStepListModel>(responseBody)!;
-	}
+        string responseBody = await response.Content.ReadAsStringAsync();
+        return JsonSerializer.Deserialize<ThreadRunStepListModel>(responseBody)!;
+    }
 
 
     public Task<Orchestration.FunctionResult> InvokeAsync(Orchestration.SKContext context, AIRequestSettings? requestSettings = null, CancellationToken cancellationToken = default)

@@ -7,7 +7,7 @@ string BingApiKey = Env.Var("Bing:ApiKey")!;
 string currentDirectory = Directory.GetCurrentDirectory();
 
 // Initialize the required functions and services for the kernel
-IChatCompletion gpt4Turbo = new OpenAIChatCompletion("gpt-4-1106-preview", OpenAIApiKey);
+IChatCompletion gpt4Turbo = new OpenAIChatCompletion("gpt-3.5-turbo-1106", OpenAIApiKey);
 
 // Create plugins
 IPlugin mathPlugin = new Plugin(
@@ -44,7 +44,7 @@ IPlugin designer = AssistantKernel.FromConfiguration(
 AssistantKernel projectManager = AssistantKernel.FromConfiguration(
     currentDirectory + "/Assistants/ProjectManager.agent.yaml",
     aiServices: new () { gpt4Turbo },
-    plugins: new () { researcher, mathmatician, designer }
+    plugins: new () { researcher }
 );
 
 IThread thread = await projectManager.CreateThreadAsync();

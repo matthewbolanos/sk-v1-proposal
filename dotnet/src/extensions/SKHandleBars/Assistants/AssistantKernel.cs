@@ -141,10 +141,20 @@ public class AssistantKernel : IKernel, IPlugin
             NativeFunction.FromNativeFunction(
                 this.AskAsync,
                 "Ask",
-                this.Description,
+                "Use this function to ask "+this.Name+" a request.\nDescription of the " +this.Name+" assistant: " + this.Description+"\nYou may call this function in parallel to start multiple threads with the "+this.Name+" assistant.",
 				new List<ParameterView>
 				{
-					new ParameterView("ask", typeof(string), "The question to ask the assistant"),
+					new ParameterView("ask", typeof(string), "The question to ask " + this.Name, IsRequired: true),
+				}
+            ),
+            NativeFunction.FromNativeFunction(
+                this.ReplyBackAsync,
+                "ReplyBack",
+                "If the response from "+this.Name+"-Ask requires a reply, use this function to reply back to the same thread",
+				new List<ParameterView>
+				{
+					new ParameterView("reply", typeof(string), "The question to ask " + this.Name, IsRequired: true),
+					new ParameterView("threadId", typeof(string), "The ID of the previous thread with " + this.Name, IsRequired: true),
 				}
             )
         };
@@ -244,14 +254,9 @@ public class AssistantKernel : IKernel, IPlugin
 
 	private async Task<IThread> GetThreadAsync(string threadId)
 	{
-		
-		var requestData = new
-		{
-			thread_id = threadId
-		};
 
-		string url = "https://api.openai.com/v1/threads";
-		using var httpRequestMessage = HttpRequest.CreateGetRequest(url, requestData);
+		string url = "https://api.openai.com/v1/threads/"+threadId;
+		using var httpRequestMessage = HttpRequest.CreateGetRequest(url);
 
 		httpRequestMessage.Headers.Add("Authorization", $"Bearer {this.apiKey}");
 		httpRequestMessage.Headers.Add("OpenAI-Beta", "assistants=v1");
@@ -263,7 +268,7 @@ public class AssistantKernel : IKernel, IPlugin
 	}
 
 	// This is the function that is provided as part of the IPlugin interface
-	private async Task<string> AskAsync(string ask, string? threadId = default)
+	private async Task<string> AskAsync(string ask, string? threadId = null)
 	{
 		// Hack to show logging in terminal
 		Console.ForegroundColor = ConsoleColor.Blue;
@@ -317,7 +322,84 @@ public class AssistantKernel : IKernel, IPlugin
 		Console.WriteLine(resultsString);
 		Console.ResetColor();
 
-		return resultsString;
+		// TODO: return AskResponse object once kernel supports complex types
+		// return new AskResponse() {
+		// 	ThreadId = thread.Id,
+		// 	Response = resultsString
+		// };
+
+		return JsonSerializer.Serialize(new AskResponse() {
+			ThreadId = thread.Id,
+			Response = resultsString,
+			Instructions = "Reply back to this thread with the ReplyBack function if you need to continue the conversation " + this.Name
+		});
+	}
+
+	private async Task<string> ReplyBackAsync(string reply, string threadId)
+	{
+		// Hack to show logging in terminal
+		Console.ForegroundColor = ConsoleColor.Blue;
+		Console.Write("ProjectManager");
+		Console.ResetColor();
+		Console.Write(" to ");
+		Console.ForegroundColor = ConsoleColor.Green;
+		Console.Write(this.Name);
+		Console.ResetColor();
+		Console.Write(" > ");
+		Console.ForegroundColor = ConsoleColor.Blue;
+		Console.WriteLine(reply);
+		Console.ResetColor();
+
+		// Create a new thread if one is not provided
+		IThread thread;
+		if (threadId == null)
+		{
+			// Create new thread
+			thread = await CreateThreadAsync();
+		}
+		else
+		{
+			// Retrieve existing thread
+			thread = await GetThreadAsync(threadId);
+		}
+
+		// Add the message from the other assistant
+		thread.AddUserMessageAsync(reply);
+
+		var results = await this.RunAsync(
+			thread,
+			variables: new Dictionary<string, object?>() {}
+		);
+
+		List<ModelMessage> modelMessages = results.GetValue<List<ModelMessage>>()!;
+
+		// Concatenate all the messages from the model
+		string resultsString = String.Join("\n",modelMessages.Select(modelMessage => modelMessage.ToString()));
+
+		// Hack to show logging in terminal
+		Console.ForegroundColor = ConsoleColor.Green;
+		Console.Write(this.Name);
+		Console.ResetColor();
+		Console.Write(" to ");
+		Console.ForegroundColor = ConsoleColor.Blue;
+		Console.Write("ProjectManager");
+		Console.ResetColor();
+		Console.Write(" > ");
+		Console.ForegroundColor = ConsoleColor.Green;
+		Console.WriteLine(resultsString);
+		Console.ResetColor();
+
+		// TODO: return AskResponse object once kernel supports complex types
+		// return new AskResponse() {
+		// 	ThreadId = thread.Id,
+		// 	Response = resultsString
+		// };
+
+		return JsonSerializer.Serialize(new AskResponse() {
+			ThreadId = thread.Id,
+			Response = resultsString,
+			Instructions = "Reply back to this thread with the ReplyBack function if you need to continue the conversation with " + this.Name
+		});
 	}
 
 

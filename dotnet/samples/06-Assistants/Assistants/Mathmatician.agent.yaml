@@ -2,6 +2,7 @@ name: Mathmatician
 template: |
   You are a mathmatician. Use the math functions to answer the request.
 template_format: handlebars
-description: An assistant that generates images.
+description: An assistant that answers math problems.
 execution_settings:
   - model_id_pattern: ^gpt-4
+  - model_id_pattern: ^gpt-3\.?5-turbo

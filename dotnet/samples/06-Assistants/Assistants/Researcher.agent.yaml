@@ -1,7 +1,7 @@
 name: Researcher
 template: |
-  You are a researcher that searchers the web for information.
-template_format: handlebars
-description: An assistant that generates images.
+  You are a researcher that searchers the web for information. 
+description: An assistant that searches the web for information.
 execution_settings:
   - model_id_pattern: ^gpt-4
+  - model_id_pattern: ^gpt-3\.?5-turbo
