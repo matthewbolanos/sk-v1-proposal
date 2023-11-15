@@ -27,3 +27,8 @@ cd ./dotnet/samples/06-Assistants
 
 dotnet run
 ```
+
+
+
+If you start with $25,000 in the stock market and leave it to grow for 20 years at a 5% interest rate, how much would you have?
+Expand the following expression: 7(3y+2)

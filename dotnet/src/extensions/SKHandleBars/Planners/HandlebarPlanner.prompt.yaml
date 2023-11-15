@@ -122,7 +122,8 @@ template: |
   1. The first steps should always be to initialize any variables you need
   2. During each step (including the first one), the template should use the \{{json}} helper to output the result of the step
   3. Don't forget to use the tips and tricks otherwise the template will not work
-  4. Don't close the ``` handlebars block until you're done with all the steps{{/message}}
+  4. At the very end, provide the answer to the user's goal by using the \{{json}} helper
+  5. Don't close the ``` handlebars block until you're done with all the steps{{/message}}
 
 template_format: Handlebars
 description: A function that generates a plan to accomplish a user's goal.

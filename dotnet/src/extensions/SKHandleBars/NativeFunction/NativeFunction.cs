@@ -355,6 +355,11 @@ public sealed class NativeFunction : ISKFunction, IDisposable
     {
         Type type = parameter.ParameterType;
 
+        if (type == typeof(Dictionary<string, object>))
+        {
+            return (static (Dictionary<string, object> context, CancellationToken _) => context, null);
+        }
+
         if (!type.IsByRef)
         {
             // Use either the parameter's name or an override from an applied SKName attribute.

@@ -67,6 +67,9 @@ public sealed class HandlebarsPlan : IPlan
                     handlebarsTemplate = template;
                 }
 
+                // Remove ``` at the end of the template
+                handlebarsTemplate = Regex.Replace(handlebarsTemplate, @"```\s*$", "", RegexOptions.Singleline);
+
                 string results = await kernel.PromptTemplateEngine.RenderAsync(kernel, handlebarsTemplate, variables, cancellationToken);
                 decodedResults = WebUtility.HtmlDecode(results);
                 // if (decodedResults != "")
@@ -82,7 +85,7 @@ public sealed class HandlebarsPlan : IPlan
             Console.ResetColor();
         }
 
-        return new FunctionResult("Plan", "Planner", decodedResults);
+        return new FunctionResult("Plan", "Planner", decodedResults.Trim());
     }
 
     public ISKFunction SetAIConfiguration(AIRequestSettings? requestSettings)

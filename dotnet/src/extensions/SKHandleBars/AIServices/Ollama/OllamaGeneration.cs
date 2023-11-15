@@ -30,7 +30,7 @@ public class OllamaGeneration : AIService
         {
             model = this.ModelId,
             prompt = chatHistory,
-            raw = true,
+            // raw = true,
             stream = false,
             options = new {
                 stop = new List<string>(){
@@ -67,11 +67,11 @@ public class OllamaGeneration : AIService
         {
             if (activeRole == null)
             {
-                ollamaPrompt.Append("<s>");
+                // ollamaPrompt.Append("<s>");
             }
             if (activeRole == null && (modelRequest.Messages[i].Role == "user" || modelRequest.Messages[i].Role == "system"))
             {
-                ollamaPrompt.Append("[INST] ");
+                // ollamaPrompt.Append("[INST] ");
             }
 
             if (modelRequest.Messages[i].Role == "system")
@@ -82,20 +82,20 @@ public class OllamaGeneration : AIService
                 }
                 if (activeRole == "user")
                 {
-                    ollamaPrompt.Append(" [/INST] ");
-                    ollamaPrompt.Append("</s>");
-                    ollamaPrompt.Append("<s>");
-                    ollamaPrompt.Append("[INST] ");
+                    // ollamaPrompt.Append(" [/INST] ");
+                    // ollamaPrompt.Append("</s>");
+                    // ollamaPrompt.Append("<s>");
+                    // ollamaPrompt.Append("[INST] ");
                 }
                 if (activeRole == "assistant")
                 {
-                    ollamaPrompt.Append("</s>");
-                    ollamaPrompt.Append("<s>");
-                    ollamaPrompt.Append("[INST] ");
+                    // ollamaPrompt.Append("</s>");
+                    // ollamaPrompt.Append("<s>");
+                    // ollamaPrompt.Append("[INST] ");
                 }
-                ollamaPrompt.Append("<<SYS>>\n");
+                // ollamaPrompt.Append("<<SYS>>\n");
                 ollamaPrompt.Append(modelRequest.Messages[i].Content);
-                ollamaPrompt.Append("\n<<SYS>>\n\n\n");
+                // ollamaPrompt.Append("\n<<SYS>>\n\n\n");
                 activeRole = "system";
                 i++;
                 continue;
@@ -108,9 +108,9 @@ public class OllamaGeneration : AIService
                 }
                 if (activeRole == "assistant")
                 {
-                    ollamaPrompt.Append("</s>");
-                    ollamaPrompt.Append("<s>");
-                    ollamaPrompt.Append("[INST] ");
+                    // ollamaPrompt.Append("</s>");
+                    // ollamaPrompt.Append("<s>");
+                    // ollamaPrompt.Append("[INST] ");
                 }
                 ollamaPrompt.Append(modelRequest.Messages[i].Content);
                 activeRole = "user";
@@ -121,11 +121,11 @@ public class OllamaGeneration : AIService
             {
                 if (activeRole == "system")
                 {
-                    ollamaPrompt.Append(" [/INST] ");
+                    // ollamaPrompt.Append(" [/INST] ");
                 }
                 if (activeRole == "user")
                 {
-                    ollamaPrompt.Append(" [/INST] ");
+                    // ollamaPrompt.Append(" [/INST] ");
                 }
                 if (activeRole == "assistant")
                 {
@@ -140,13 +140,13 @@ public class OllamaGeneration : AIService
 
         if (activeRole == "system")
         {
-            ollamaPrompt.Append(" [/INST] ");
+            // ollamaPrompt.Append(" [/INST] ");
         }
         if (activeRole == "user")
         {
-            ollamaPrompt.Append(" [/INST] ");
+            // ollamaPrompt.Append(" [/INST] ");
         }
-        ollamaPrompt.Append("</s>");
+        // ollamaPrompt.Append("</s>");
 
         return ollamaPrompt.ToString();
 }

@@ -67,32 +67,32 @@ IKernel kernel = new Kernel(
 );
 
 
-// Running Face Mask Task
-var faceMaskTaskResult = await kernel.RunAsync( fillMaskTaskFunction, variables: new() {});
-faceMaskTaskResult.TryGetMetadataValue<List<FillMaskTaskResponse>>(AIFunctionResultExtensions.ModelResultsMetadataKey, out var fillMaskTaskResponses);
-PrintResult("Face Mask Task", faceMaskTaskResult.GetValue<string>()!, fillMaskTaskResponses);
+// // Running Face Mask Task
+// var faceMaskTaskResult = await kernel.RunAsync( fillMaskTaskFunction, variables: new() {});
+// faceMaskTaskResult.TryGetMetadataValue<List<FillMaskTaskResponse>>(AIFunctionResultExtensions.ModelResultsMetadataKey, out var fillMaskTaskResponses);
+// PrintResult("Face Mask Task", faceMaskTaskResult.GetValue<string>()!, fillMaskTaskResponses);
 
-// Running Summarization Task
-var summarizationTaskResult = await kernel.RunAsync( questionAnsweringTaskFunction, variables: new() {});
-summarizationTaskResult.TryGetMetadataValue<List<SummarizationTaskResponse>>(AIFunctionResultExtensions.ModelResultsMetadataKey, out var summarizationTaskResponses);
-PrintResult("Summarization Task", summarizationTaskResult.GetValue<string>()!, summarizationTaskResponses);
+// // Running Summarization Task
+// var summarizationTaskResult = await kernel.RunAsync( questionAnsweringTaskFunction, variables: new() {});
+// summarizationTaskResult.TryGetMetadataValue<List<SummarizationTaskResponse>>(AIFunctionResultExtensions.ModelResultsMetadataKey, out var summarizationTaskResponses);
+// PrintResult("Summarization Task", summarizationTaskResult.GetValue<string>()!, summarizationTaskResponses);
 
-// Running Question Answering Task
-var questionAnsweringTaskResult = await kernel.RunAsync( summarizationTaskFunction, variables: new() {});
-questionAnsweringTaskResult.TryGetMetadataValue<QuestionAnsweringTaskResponse>(AIFunctionResultExtensions.ModelResultsMetadataKey, out var questionAnsweringTaskResponses);
-PrintResult("Question Answering Task", questionAnsweringTaskResult.GetValue<string>()!, questionAnsweringTaskResponses);
+// // Running Question Answering Task
+// var questionAnsweringTaskResult = await kernel.RunAsync( summarizationTaskFunction, variables: new() {});
+// questionAnsweringTaskResult.TryGetMetadataValue<QuestionAnsweringTaskResponse>(AIFunctionResultExtensions.ModelResultsMetadataKey, out var questionAnsweringTaskResponses);
+// PrintResult("Question Answering Task", questionAnsweringTaskResult.GetValue<string>()!, questionAnsweringTaskResponses);
 
-// Running Text to Image Task
-var questionTextToImageResult = await kernel.RunAsync( textToImageTaskFunction, variables: new() {});
-Image image = questionTextToImageResult.GetValue<Image>()!;
-var filePath = "/Users/matthewbolanos/Downloads/image.png";
-await File.WriteAllBytesAsync(filePath, image.Bytes);
-PrintResult("Text to Image Task", filePath, image.ToString());
+// // Running Text to Image Task
+// var questionTextToImageResult = await kernel.RunAsync( textToImageTaskFunction, variables: new() {});
+// Image image = questionTextToImageResult.GetValue<Image>()!;
+// var filePath = "/Users/matthewbolanos/Downloads/image.png";
+// await File.WriteAllBytesAsync(filePath, image.Bytes);
+// PrintResult("Text to Image Task", filePath, image.ToString());
 
-// Running Image to Text Task
-var imageToTextResult = await kernel.RunAsync( imageToTextTaskFunction, variables: new() {});
-imageToTextResult.TryGetMetadataValue<OpenAIChatResponse>(AIFunctionResultExtensions.ModelResultsMetadataKey, out var imageToTextTaskResponses);
-PrintResult("Image to Text Task", imageToTextResult.GetValue<string>()!, imageToTextTaskResponses);
+// // Running Image to Text Task
+// var imageToTextResult = await kernel.RunAsync( imageToTextTaskFunction, variables: new() {});
+// imageToTextResult.TryGetMetadataValue<OpenAIChatResponse>(AIFunctionResultExtensions.ModelResultsMetadataKey, out var imageToTextTaskResponses);
+// PrintResult("Image to Text Task", imageToTextResult.GetValue<string>()!, imageToTextTaskResponses);
 
 // Running local Ollama Generation
 var mathResult = await kernel.RunAsync(ollamaGenerationFunction, variables: new() {});

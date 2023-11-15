@@ -247,53 +247,61 @@ public class OpenAIThread : IThread
     private async Task<ThreadRunModel> CreateThreadRunAsync(AssistantKernel kernel, Dictionary<string, object?>? variables = default)
     {
         List<object> tools = new List<object>();
-
-        // Much of this code was copied from the existing function calling code
-        // Ideally it can reuse the same code without having to duplicate it
-        foreach (FunctionView functionView in kernel.GetFunctionViews())
+        if (kernel.Name != "Mathmatician")
         {
-            var OpenAIFunction = functionView.ToOpenAIFunction().ToFunctionDefinition();
-
-            var requiredParams = new List<string>();
-            var paramProperties = new Dictionary<string, object>();
-            foreach (var param in functionView.Parameters)
+            // Much of this code was copied from the existing function calling code
+            // Ideally it can reuse the same code without having to duplicate it
+            foreach (FunctionView functionView in kernel.GetFunctionViews())
             {
-                // if double or int, then type is number
-                var type = param.Type.Name.ToLower();
-                if (type == "double" || type == "int" || type == "int32" || type == "int64")
-                {
-                    type = "number";
-                }
+                var OpenAIFunction = functionView.ToOpenAIFunction().ToFunctionDefinition();
 
-                paramProperties.Add(
-                    param.Name,
-                    new
+                var requiredParams = new List<string>();
+                var paramProperties = new Dictionary<string, object>();
+                foreach (var param in functionView.Parameters)
+                {
+                    if (param.Type.Name == "IKernel")
                     {
-                        type = type,
-                        description = param.Description,
-                    });
+                        continue;
+                    }
 
-                if (param.IsRequired ?? false)
-                {
-                    requiredParams.Add(param.Name);
-                }
-            }
+                    // if double or int, then type is number
+                    var type = param.Type.Name.ToLower();
 
-            tools.Add(new
-            {
-                type = "function",
-                function = new
-                {
-                    name = OpenAIFunction.Name,
-                    description = OpenAIFunction.Description,
-                    parameters = new
+                    if (type == "double" || type == "int" || type == "int32" || type == "int64")
                     {
-                        type = "object",
-                        properties = paramProperties,
-                        required = requiredParams,
+                        type = "number";
+                    }
+
+                    paramProperties.Add(
+                        param.Name,
+                        new
+                        {
+                            type = type,
+                            description = param.Description,
+                        });
+
+                    if (param.IsRequired ?? false)
+                    {
+                        requiredParams.Add(param.Name);
                     }
                 }
-            });
+
+                tools.Add(new
+                {
+                    type = "function",
+                    function = new
+                    {
+                        name = OpenAIFunction.Name,
+                        description = OpenAIFunction.Description,
+                        parameters = new
+                        {
+                            type = "object",
+                            properties = paramProperties,
+                            required = requiredParams,
+                        }
+                    }
+                });
+            }
         }
 
         string assistantInstructions = variables?["instructions"]?.ToString() ?? "";

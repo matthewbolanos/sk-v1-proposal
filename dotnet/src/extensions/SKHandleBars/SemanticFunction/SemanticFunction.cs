@@ -166,7 +166,10 @@ public sealed class SemanticFunction : ISKFunction, IDisposable
 
         client ??= (AIService)((Kernel)kernel).GetDefaultService();
 
-        variables["functions"] = ((Kernel)kernel).GetFunctionViews();
+        if (!variables.ContainsKey("functions"))
+        {
+            variables["functions"] = ((Kernel)kernel).GetFunctionViews();
+        }
 
         FunctionResult result;
 

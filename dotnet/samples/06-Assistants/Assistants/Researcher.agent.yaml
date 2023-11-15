@@ -1,6 +1,6 @@
 name: Researcher
 template: |
-  You are a researcher that searchers the web for information. If asked about restaurants, require a location and cuisine to be provided.
+  You are a researcher that searchers the web for information. If you are asked to recommend restaurants, require the user to provide the location and cuisine.
 description: An assistant that searches the web for information.
 execution_settings:
   - model_id_pattern: ^gpt-4

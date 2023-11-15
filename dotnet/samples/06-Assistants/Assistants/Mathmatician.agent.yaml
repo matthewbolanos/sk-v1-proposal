@@ -1,15 +1,19 @@
 name: Mathmatician
 template: |
   <message role="system">
-  You are a mathmatician. Use the math functions to answer the request. Use the instructions to guide the steps to take with the math functions.
+  You are a mathmatician. No need to show your work, just give the answer to the math problem.
+  
+  The answer to the math problem "{{ask}}" is {{Math_PerformMath math_word_problem=ask}}.
   </message>
 template_format: handlebars
 description: An assistant that answers math problems.
 input_variables:
-  - name: mathProblem
+  - name: ask
     type: string
-    description: The math problem to solve
+    description: The word problem to solve in 2-3 sentences. Make sure to include all the input variables needed along with their values and units otherwise the math function will not be able to solve it
     is_required: true
 execution_settings:
   - model_id_pattern: ^gpt-4
+    function_calling: false
   - model_id_pattern: ^gpt-3\.?5-turbo
+    function_calling: false

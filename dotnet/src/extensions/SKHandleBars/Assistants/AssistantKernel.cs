@@ -37,6 +37,8 @@ public class AssistantKernel : Kernel, IPlugin
 
     private readonly ModelRequestXmlConverter modelRequestXmlConverter = new();
 
+	private readonly List<VariableViewModel> inputs;
+
 	// Allows the creation of an assistant from a YAML file
 	public static AssistantKernel FromConfiguration(
 		string configurationFile,
@@ -59,6 +61,7 @@ public class AssistantKernel : Kernel, IPlugin
 			assistantKernelModel.Template,
 			aiServices,
 			plugins,
+			assistantKernelModel.InputVariables,
 			promptTemplateEngines
 		);
 	}
@@ -69,12 +72,14 @@ public class AssistantKernel : Kernel, IPlugin
 		string? instructions,
 		List<IAIService>? aiServices = null,
 		List<IPlugin>? plugins = null,
+		List<VariableViewModel>? inputs = null,
 		List<IPromptTemplateEngine>? promptTemplateEngines = null
 	) : base(aiServices, plugins, promptTemplateEngines)
 	{
 		this.Name = name;
 		this.Description = description;
 		this.instructions = instructions;
+		this.inputs = inputs ?? new List<VariableViewModel>();
 		
 		// Grab the first AI service for the apiKey and model for the Assistants API
 		// This requires that the API key be made internal so it can be accessed here
@@ -96,6 +101,27 @@ public class AssistantKernel : Kernel, IPlugin
 			}
 		}
 
+		List<ParameterView> askParameterView = new List<ParameterView>();
+		// check if this.inputs has a variable with the name "ask"
+		if (!this.inputs.Any(input => input.Name == "ask"))
+		{
+			askParameterView.Add(new ParameterView("ask", typeof(string), "The question to ask " + this.Name, IsRequired: true));
+		}
+		foreach (var input in this.inputs)
+		{
+			askParameterView.Add(new ParameterView(input.Name, typeof(string), input.Description, IsRequired: true));
+		}
+
+		List<ParameterView> replyBackParameterView = new List<ParameterView>
+        {
+            new ParameterView("reply", typeof(string), "The question to ask " + this.Name, IsRequired: true),
+            new ParameterView("threadId", typeof(string), "The ID of the previous thread with " + this.Name, IsRequired: true)
+        };
+		foreach (var input in this.inputs)
+		{
+			replyBackParameterView.Add(new ParameterView(input.Name, typeof(string), input.Description, IsRequired: true));
+		}
+
 		// Create functions so other kernels can use this kernel as a plugin
 		// TODO: make it possible for the ask function to have additional parameters based on the instruction template
 		this.functions = new List<ISKFunction>
@@ -104,21 +130,14 @@ public class AssistantKernel : Kernel, IPlugin
                 this.AskAsync,
                 "Ask",
                 "Use this function to ask "+this.Name+" a request.\nDescription of the " +this.Name+" assistant: " + this.Description+"\nYou may call this function in parallel to start multiple threads with the "+this.Name+" assistant.",
-				new List<ParameterView>
-				{
-					new ParameterView("ask", typeof(string), "The question to ask " + this.Name, IsRequired: true),
-				}
-            ),
-            NativeFunction.FromNativeFunction(
-                this.ReplyBackAsync,
-                "ReplyBack",
-                "If the response from "+this.Name+"-Ask requires a reply, use this function to reply back to the same thread",
-				new List<ParameterView>
-				{
-					new ParameterView("reply", typeof(string), "The question to ask " + this.Name, IsRequired: true),
-					new ParameterView("threadId", typeof(string), "The ID of the previous thread with " + this.Name, IsRequired: true),
-				}
+				askParameterView
             )
+            // NativeFunction.FromNativeFunction(
+            //     this.ReplyBackAsync,
+            //     "ReplyBack",
+            //     "If the response from "+this.Name+"-Ask requires a reply, use this function to reply back to the same thread",
+			// 	replyBackParameterView
+            // )
         };
 	}
 
@@ -259,8 +278,7 @@ public class AssistantKernel : Kernel, IPlugin
 		return new OpenAIThread(threadModel.Id, apiKey, this);
 	}
 
-	// This is the function that is provided as part of the IPlugin interface
-	private async Task<string> AskAsync(string ask, string? threadId = null, Dictionary<string, object?>? variables = null)
+	private async Task<string> SendMessageAsync(string ask, string threadId, Dictionary<string, object> variables)
 	{
 		// Hack to show logging in terminal
 		Console.ForegroundColor = ConsoleColor.Blue;
@@ -327,9 +345,17 @@ public class AssistantKernel : Kernel, IPlugin
 		});
 	}
 
-	private async Task<string> ReplyBackAsync(string reply, string threadId, Dictionary<string, object?>? variables = null)
+	// This is the function that is provided as part of the IPlugin interface
+	private async Task<string> AskAsync(Dictionary<string, object> variables)
 	{
-		return await this.AskAsync(reply, threadId, variables);
+		IThread thread = await CreateThreadAsync();
+
+		return await SendMessageAsync(variables["ask"].ToString(), thread.Id, variables);
+	}
+
+	private async Task<string> ReplyBackAsync(Dictionary<string, object> variables)
+	{
+		return await this.SendMessageAsync(variables["ask"].ToString(), variables["threadId"].ToString(), variables);
 	}
 
 

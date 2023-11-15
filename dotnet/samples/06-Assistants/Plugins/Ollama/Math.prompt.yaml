@@ -1,0 +1,12 @@
+name: PerformMath
+template: |
+  <message role="user">{{math_word_problem}}</message>
+template_format: handlebars
+description: A function that answers a math problem.
+input_variables:
+  - name: math_word_problem
+    type: string
+    description: The math problem to solve
+    is_required: true
+execution_settings:
+  - model_id_pattern: ^wizard-math

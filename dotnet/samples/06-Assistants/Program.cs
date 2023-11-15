@@ -7,12 +7,20 @@ string BingApiKey = Env.Var("Bing:ApiKey")!;
 string currentDirectory = Directory.GetCurrentDirectory();
 
 // Initialize the required functions and services for the kernel
-IChatCompletion gpt4Turbo = new OpenAIChatCompletion("gpt-3.5-turbo-1106", OpenAIApiKey);
+IChatCompletion gpt35Turbo = new OpenAIChatCompletion("gpt-3.5-turbo-1106", OpenAIApiKey);
+OllamaGeneration ollamaGeneration = new("wizard-math");
 
 // Create plugins
 IPlugin mathPlugin = new Plugin(
     name: "Math",
     functions: NativeFunction.GetFunctionsFromObject(new Math())
+);
+
+Plugin ollamaGenerationPlugin = new Plugin(
+    name: "Math",
+    functions: new () {
+        SemanticFunction.GetFunctionFromYaml(currentDirectory + "/Plugins/Ollama/Math.prompt.yaml")
+    }
 );
 
 IPlugin searchPlugin = new Plugin(
@@ -23,27 +31,21 @@ IPlugin searchPlugin = new Plugin(
 // Create a researcher
 IPlugin researcher = AssistantKernel.FromConfiguration(
     currentDirectory + "/Assistants/Researcher.agent.yaml",
-    aiServices: new () { gpt4Turbo },
+    aiServices: new () { gpt35Turbo, },
     plugins: new () { searchPlugin }
 );
 
 // Create a mathmatician
 IPlugin mathmatician = AssistantKernel.FromConfiguration(
     currentDirectory + "/Assistants/Mathmatician.agent.yaml",
-    aiServices: new () { gpt4Turbo },
+    aiServices: new () { gpt35Turbo, ollamaGeneration },
     plugins: new () { mathPlugin }
-);
-
-// Create a designer
-IPlugin designer = AssistantKernel.FromConfiguration(
-    currentDirectory + "/Assistants/Designer.agent.yaml",
-    aiServices: new () { gpt4Turbo }
 );
 
 // Create a Project Manager
 AssistantKernel projectManager = AssistantKernel.FromConfiguration(
     currentDirectory + "/Assistants/ProjectManager.agent.yaml",
-    aiServices: new () { gpt4Turbo },
+    aiServices: new () { gpt35Turbo },
     plugins: new () { researcher, mathmatician }
 );
 

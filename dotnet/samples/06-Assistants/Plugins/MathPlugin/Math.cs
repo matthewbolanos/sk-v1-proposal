@@ -12,64 +12,64 @@ public class Math
     {
     }
 
-    // [SKFunction]
-    // [Description("Uses functions from the Math plugin to solve math problems; useful if you don't want to waste time calling each function individually.")]
-    // [SKOutputDescription("The answer to the math problem.")]
-    // public static async Task<string> PerformMath(
-    //     IKernel kernel,
-    //     [Description("A description of a math problem; use the GenerateMathProblem function to create one.")] string math_problem
-    // )
-    // {
-    //     int maxTries = 1;
-    //     HandlebarsPlan? lastPlan = null;
-    //     Exception? lastError = null;
+    [SKFunction]
+    [Description("Uses functions from the Math plugin to solve math problems; useful if you don't want to waste time calling each function individually.")]
+    [SKOutputDescription("The answer to the math problem.")]
+    public static async Task<string> PerformMath(
+        IKernel kernel,
+        [Description("A description of a math problem; use the GenerateMathProblem function to create one.")] string math_word_problem
+    )
+    {
+        int maxTries = 1;
+        HandlebarsPlan? lastPlan = null;
+        Exception? lastError = null;
 
-    //     while (maxTries >= 0)
-    //     {
-    //         // Create the planner
-    //         var planner = new HandlebarsPlanner(kernel, new HandlebarsPlannerConfiguration(){
-    //             IncludedPlugins = new () { "Math" },
-    //             ExcludedFunctions = new () { "Math.PerformMath", "Math.GenerateMathProblem" },
-    //             LastPlan = lastPlan, // Pass in the last plan in case we want to try again
-    //             LastError = lastError?.Message // Pass in the last error to avoid trying the same thing again
-    //         });
-    //         var plan = await planner.CreatePlanAsync("Solve the following math problem.\n\n" + math_problem);
-    //         lastPlan = plan;
+        while (maxTries >= 0)
+        {
+            // Create the planner
+            var planner = new HandlebarsPlanner(kernel, new HandlebarsPlannerConfiguration(){
+                IncludedPlugins = new () { "Math" },
+                ExcludedFunctions = new () { "Math.PerformMath", "Math.GenerateMathProblem" },
+                LastPlan = lastPlan, // Pass in the last plan in case we want to try again
+                LastError = lastError?.Message // Pass in the last error to avoid trying the same thing again
+            });
+            var plan = await planner.CreatePlanAsync("Solve the following math problem.\n\n" + math_word_problem);
+            lastPlan = plan;
 
 
-    //         // Console.ForegroundColor = ConsoleColor.Blue;
-    //         // Console.WriteLine("[Plan]");
-    //         // Console.ForegroundColor = ConsoleColor.DarkBlue;
-    //         // Console.WriteLine(lastPlan.ToString().Trim());
-    //         // Console.ResetColor();
+            // Console.ForegroundColor = ConsoleColor.Blue;
+            // Console.WriteLine("[Plan]");
+            // Console.ForegroundColor = ConsoleColor.DarkBlue;
+            // Console.WriteLine(lastPlan.ToString().Trim());
+            // Console.ResetColor();
             
-    //         // Run the plan
-    //         try {
-    //             var result = await plan.InvokeAsync(kernel, new Dictionary<string, object?>());
+            // Run the plan
+            try {
+                var result = await plan.InvokeAsync(kernel, new Dictionary<string, object?>());
 
-    //             // Console.ForegroundColor = ConsoleColor.Green;
-    //             // Console.WriteLine("[Result]");
-    //             // Console.ForegroundColor = ConsoleColor.DarkGreen;
-    //             // Console.WriteLine(result.ToString().Trim());
-    //             // Console.ResetColor();
+                // Console.ForegroundColor = ConsoleColor.Green;
+                // Console.WriteLine("[Result]");
+                // Console.ForegroundColor = ConsoleColor.DarkGreen;
+                // Console.WriteLine(result.ToString().Trim());
+                // Console.ResetColor();
 
-    //             return result.GetValue<string>()!;
-    //         } catch (Exception e) {
-    //             // If we get an error, try again
-    //             lastError = e;
+                return result.GetValue<string>()!;
+            } catch (Exception e) {
+                // If we get an error, try again
+                lastError = e;
 
-    //             // Console.ForegroundColor = ConsoleColor.Red;
-    //             // Console.WriteLine("[Error]");
-    //             // Console.ForegroundColor = ConsoleColor.DarkRed;
-    //             // Console.WriteLine(e.Message.ToString().Trim());
-    //             // Console.ResetColor();
-    //         }
-    //         maxTries--;
-    //     }
+                // Console.ForegroundColor = ConsoleColor.Red;
+                // Console.WriteLine("[Error]");
+                // Console.ForegroundColor = ConsoleColor.DarkRed;
+                // Console.WriteLine(e.Message.ToString().Trim());
+                // Console.ResetColor();
+            }
+            maxTries--;
+        }
 
-    //     // If we tried too many times, throw an exception
-    //     throw lastError!;
-    // }
+        // If we tried too many times, throw an exception
+        throw lastError!;
+    }
     
 
     [SKFunction]
