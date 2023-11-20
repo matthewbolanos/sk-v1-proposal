@@ -1,13 +1,14 @@
 package com.microsoft.semantickernel.v1.templateengine;
 
+import java.util.List;
+
 import com.microsoft.semantickernel.orchestration.SKContext;
 import com.microsoft.semantickernel.templateengine.PromptTemplateEngine;
 import com.microsoft.semantickernel.templateengine.blocks.Block;
+
 import reactor.core.publisher.Mono;
 
-import java.util.List;
-
-public class HandlebarsTemplateEngine implements PromptTemplateEngine {
+public class HandlebarsPromptTemplateEngine implements PromptTemplateEngine {
 
     @Override
     public Mono<String> renderAsync(String s, SKContext skContext) {

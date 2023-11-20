@@ -11,20 +11,7 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <artifactId>sk-v1-samples</artifactId>
-    <packaging>pom</packaging>
-
-    <modules>
-        <module>01-SimpleChat</module>
-        <module>02-PersonaChat</module>
-    </modules>
-
-    <dependencies>
-        <dependency>
-            <groupId>com.microsoft.semantic-kernel</groupId>
-            <artifactId>sk-v1-hacks</artifactId>
-            <version>1.0-SNAPSHOT</version>
-        </dependency>
-    </dependencies>
+    <artifactId>sk-v1-hacks</artifactId>
+    <packaging>jar</packaging>
 
 </project>
