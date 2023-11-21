@@ -5,12 +5,12 @@ import com.azure.ai.openai.OpenAIAsyncClient;
 import com.azure.ai.openai.OpenAIClientBuilder;
 import com.azure.core.credential.KeyCredential;
 import com.microsoft.semantickernel.Kernel;
+import com.microsoft.semantickernel.KernelResult;
 import com.microsoft.semantickernel.SKBuilders;
 import com.microsoft.semantickernel.chatcompletion.ChatCompletion;
 import com.microsoft.semantickernel.chatcompletion.ChatHistory;
 import com.microsoft.semantickernel.exceptions.ConfigurationException;
 import com.microsoft.semantickernel.orchestration.ContextVariables;
-import com.microsoft.semantickernel.orchestration.SKContext;
 import com.microsoft.semantickernel.orchestration.SKFunction;
 import com.microsoft.semantickernel.v1.semanticfunctions.SemanticFunction;
 import com.microsoft.semantickernel.v1.templateengine.HandlebarsPromptTemplateEngine;
@@ -62,70 +62,25 @@ public class Main {
             // Run the simple chat
             // The simple chat function uses the messages variable to generate the next message
             // see Plugins/ChatPlugin/SimpleChat.prompt.yaml for the full prompt
-            SKContext result = kernel.runAsync(
+            KernelResult result = kernel.runAsync(
+                true, // streaming
                 ContextVariables.builder()
-                .withVariable("messages", chatHistory)
-                .withVariable("persona", "You are a snarky (yet helpful) teenage assistant. Make sure to use hip slang in every response.")
+                    .withVariable("messages", chatHistory)
+                    .withVariable("persona", "You are a snarky (yet helpful) teenage assistant. Make sure to use hip slang in every response.")
                 .build(),
                 chatFunction
-                // TODO: streaming: true
             ).block();
 
             System.console().printf("Assistant > ");
-            // TODO for(var message : result.getStreamingResult())
-            String message = (String)result.getResult();
-            {
-                System.console().printf(message);
-            }
-            System.console().printf("%n");
-            // TODO: chatHistory.addAssistantMessage(await result.getValueAsync<String>());
-            chatHistory.addAssistantMessage(message);
+            result.functionResults().forEach(
+                functionResult -> {
+                    functionResult.<String>getStreamingValueAsync().subscribe(
+                        message -> System.console().printf(message)
+                    ); 
+                    String message = functionResult.<String>getValueAsync().block();
+                    chatHistory.addAssistantMessage(message);
+                }
+            );
         }            
     }
 }
-/*
-string Gpt35TurboDeploymentName = Env.Var("AzureOpenAI:Gpt35TurboDeploymentName")!;
-string Gpt4DeploymentName = Env.Var("AzureOpenAI:Gpt4DeploymentName")!;
-string AzureOpenAIEndpoint = Env.Var("AzureOpenAI:Endpoint")!;
-string AzureOpenAIApiKey = Env.Var("AzureOpenAI:ApiKey")!;
-string currentDirectory = Directory.GetCurrentDirectory();
-
-// Initialize the required functions and services for the kernel
-ISKFunction chatFunction = SemanticFunction.GetFunctionFromYaml(currentDirectory + "/Plugins/ChatPlugin/PersonaChat.prompt.yaml");
-IChatCompletion gpt35Turbo = new AzureOpenAIChatCompletion("gpt-3.5-turbo", AzureOpenAIEndpoint, AzureOpenAIApiKey, Gpt35TurboDeploymentName);
-IChatCompletion gpt4 = new AzureOpenAIChatCompletion("gpt-4", AzureOpenAIEndpoint, AzureOpenAIApiKey, Gpt4DeploymentName);
-
-// Create new kernel
-IKernel kernel = new Kernel(
-aiServices: new () { gpt35Turbo, gpt4 },
-promptTemplateEngines: new () {new HandlebarsPromptTemplateEngine()}
-);
-
-// Start the chat
-ChatHistory chatHistory = gpt35Turbo.CreateNewChat();
-while(true)
-{
-    Console.Write("User > ");
-    chatHistory.AddUserMessage(Console.ReadLine()!);
-    
-    // Run the chat function
-    // The persona chat function uses the persona variable to set the persona of the chat using a system message
-    // See Plugins/ChatPlugin/PersonaChat.prompt.yaml for the full prompt
-    var result = await kernel.RunAsync(
-    chatFunction,
-    variables: new() {
-        { "persona", "You are a snarky (yet helpful) teenage assistant. Make sure to use hip slang in every response." },
-        { "messages", chatHistory }
-    },
-    streaming: true
-    );
-    
-    Console.Write("Assistant > ");
-    await foreach(var message in result.GetStreamingValue<string>()!)
-    {
-        Console.Write(message);
-    }
-    Console.WriteLine();
-    chatHistory.AddAssistantMessage(await result.GetValueAsync<string>()!);
-}
-*/

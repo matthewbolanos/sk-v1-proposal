@@ -4,12 +4,12 @@ import com.azure.ai.openai.OpenAIAsyncClient;
 import com.azure.ai.openai.OpenAIClientBuilder;
 import com.azure.core.credential.KeyCredential;
 import com.microsoft.semantickernel.Kernel;
+import com.microsoft.semantickernel.KernelResult;
 import com.microsoft.semantickernel.SKBuilders;
 import com.microsoft.semantickernel.chatcompletion.ChatCompletion;
 import com.microsoft.semantickernel.chatcompletion.ChatHistory;
 import com.microsoft.semantickernel.exceptions.ConfigurationException;
 import com.microsoft.semantickernel.orchestration.ContextVariables;
-import com.microsoft.semantickernel.orchestration.SKContext;
 import com.microsoft.semantickernel.orchestration.SKFunction;
 import com.microsoft.semantickernel.v1.semanticfunctions.SemanticFunction;
 import com.microsoft.semantickernel.v1.templateengine.HandlebarsPromptTemplateEngine;
@@ -59,21 +59,22 @@ public class Main {
             // Run the simple chat
             // The simple chat function uses the messages variable to generate the next message
             // see Plugins/ChatPlugin/SimpleChat.prompt.yaml for the full prompt
-            SKContext result = kernel.runAsync(
+            KernelResult result = kernel.runAsync(
+                true, // streaming
                 ContextVariables.builder().withVariable("messages", chatHistory).build(),
                 chatFunction
-                // TODO: streaming: true
             ).block();
 
             System.console().printf("Assistant > ");
-            // TODO for(var message : result.getResult())
-            String message = (String)result.getResult();
-            {
-                System.console().printf(message);
-            }
-            System.console().printf("%n");
-            // TODO: chatHistory.addAssistantMessage(result.getValueAsync<String>());
-            chatHistory.addAssistantMessage(message);
+            result.functionResults().forEach(
+                functionResult -> {
+                    functionResult.<String>getStreamingValueAsync().subscribe(
+                        message -> System.console().printf(message)
+                    ); 
+                    String message = functionResult.<String>getValueAsync().block();
+                    chatHistory.addAssistantMessage(message);
+                }
+            );
         }
     }
 }
