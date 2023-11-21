@@ -31,7 +31,7 @@ public class Main {
             .buildAsyncClient();
         // Initialize the required functions and services for the kernel
         Path yamlPath = Path.of(CURRENT_DIRECTORY + "/Plugins/ChatPlugin/PersonaChat.prompt.yaml");
-        SKFunction<?> chatFunction = SemanticFunction.fromYaml(yamlPath);
+        SKFunction chatFunction = SemanticFunction.fromYaml(yamlPath);
 
         ChatCompletion<ChatHistory> gpt35Turbo = ChatCompletion.builder()
             .withOpenAIClient(client)
@@ -53,13 +53,13 @@ public class Main {
         ChatHistory chatHistory = gpt35Turbo.createNewChat();
         while(true)
         {
-            System.console().readLine("User > ");
-            String input = chatHistory.addUserMessage(input);
+            String input = System.console().readLine("User > ");
+            chatHistory.addUserMessage(input);
 
             // Run the simple chat
             // The simple chat function uses the messages variable to generate the next message
             // see Plugins/ChatPlugin/SimpleChat.prompt.yaml for the full prompt
-            SKContext result = kernel.RunAsync(
+            SKContext result = kernel.runAsync(
                 ContextVariables.builder().withVariable("messages", chatHistory).build(),
                 chatFunction
                 // TODO: streaming: true
@@ -67,12 +67,13 @@ public class Main {
 
             System.console().printf("Assistant > ");
             // TODO for(var message : result.getResult())
-            String message = result.getResult();
+            String message = (String)result.getResult();
             {
                 System.console().printf(message);
-                chatHistory.addAssistantMessage(message);
             }
-            System.console.printf("%n");
+            System.console().printf("%n");
+            // TODO: chatHistory.addAssistantMessage(result.getValueAsync<String>());
+            chatHistory.addAssistantMessage(message);
         }
     }
 }

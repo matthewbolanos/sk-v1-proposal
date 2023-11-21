@@ -9,6 +9,8 @@ import com.microsoft.semantickernel.SKBuilders;
 import com.microsoft.semantickernel.chatcompletion.ChatCompletion;
 import com.microsoft.semantickernel.chatcompletion.ChatHistory;
 import com.microsoft.semantickernel.exceptions.ConfigurationException;
+import com.microsoft.semantickernel.orchestration.ContextVariables;
+import com.microsoft.semantickernel.orchestration.SKContext;
 import com.microsoft.semantickernel.orchestration.SKFunction;
 import com.microsoft.semantickernel.v1.semanticfunctions.SemanticFunction;
 import com.microsoft.semantickernel.v1.templateengine.HandlebarsPromptTemplateEngine;
@@ -32,7 +34,7 @@ public class Main {
 
         // Initialize the required functions and services for the kernel
         Path yamlPath = Path.of(CURRENT_DIRECTORY + "/Plugins/ChatPlugin/PersonaChat.prompt.yaml");
-        SKFunction<?> chatFunction = SemanticFunction.fromYaml(yamlPath);
+        SKFunction chatFunction = SemanticFunction.fromYaml(yamlPath);
 
         ChatCompletion<ChatHistory> gpt35Turbo = ChatCompletion.builder()
             .withOpenAIClient(client)
@@ -50,6 +52,35 @@ public class Main {
             .withDefaultAIService(gpt4)
             .withPromptTemplateEngine(new HandlebarsPromptTemplateEngine())
             .build();
+
+        ChatHistory chatHistory = gpt35Turbo.createNewChat();
+        while(true)
+        {
+            String input = System.console().readLine("User > ");
+            chatHistory.addUserMessage(input);
+
+            // Run the simple chat
+            // The simple chat function uses the messages variable to generate the next message
+            // see Plugins/ChatPlugin/SimpleChat.prompt.yaml for the full prompt
+            SKContext result = kernel.runAsync(
+                ContextVariables.builder()
+                .withVariable("messages", chatHistory)
+                .withVariable("persona", "You are a snarky (yet helpful) teenage assistant. Make sure to use hip slang in every response.")
+                .build(),
+                chatFunction
+                // TODO: streaming: true
+            ).block();
+
+            System.console().printf("Assistant > ");
+            // TODO for(var message : result.getStreamingResult())
+            String message = (String)result.getResult();
+            {
+                System.console().printf(message);
+            }
+            System.console().printf("%n");
+            // TODO: chatHistory.addAssistantMessage(await result.getValueAsync<String>());
+            chatHistory.addAssistantMessage(message);
+        }            
     }
 }
 /*
