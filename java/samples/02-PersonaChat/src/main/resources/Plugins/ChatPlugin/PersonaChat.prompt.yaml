@@ -1,17 +1,22 @@
-name: SimpleChat
+name: PersonaChat
 template: |
   {{#message role="system"}}
-  You are a helpful assistant.
+  {{persona}}
   {{/message}}
 
   {{#each messages}}
     {{#message role=Role}}
-      {{~Content~}}
+    {{~Content~}}
     {{/message}}
   {{/each}}
 template_format: handlebars
 description: A function that uses the chat history to respond to the user.
 input_variables:
+  - name: persona
+    type: string
+    description: The persona of the assistant.
+    default_value: You are a helpful assistant.
+    is_required: false
   - name: messages
     type: ChatHistory
     description: The history of the chat.
