@@ -1,11 +1,15 @@
 package com.microsoft.semantickernel.v1.plugin;
 
-import com.microsoft.semantickernel.orchestration.SKFunction;
 import java.util.Collection;
+
+import com.microsoft.semantickernel.orchestration.SKFunction;
 
 public class Plugin implements com.microsoft.semantickernel.plugin.Plugin {
     
     public Plugin(String name, String description, SKFunction... functions) {
+    }
+
+    public Plugin(String name, String description, Collection<SKFunction> functions) {
     }
 
     public String name() {

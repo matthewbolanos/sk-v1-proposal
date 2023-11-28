@@ -16,6 +16,7 @@ import com.microsoft.semantickernel.orchestration.SKFunction;
 import com.microsoft.semantickernel.plugin.Plugin;
 import com.microsoft.semantickernel.v1.semanticfunctions.SemanticFunction;
 import com.microsoft.semantickernel.v1.templateengine.HandlebarsPromptTemplateEngine;
+
 import plugins.searchplugin.Search;
 
 public class Main {
@@ -37,7 +38,7 @@ public class Main {
 
 
         // Initialize the required functions and services for the kernel
-        Path yamlPath = Path.of(CURRENT_DIRECTORY + "/Plugins/ChatPlugin/PersonaChat.prompt.yaml");
+        Path yamlPath = Path.of(CURRENT_DIRECTORY + "/Plugins/ChatPlugin/GroundedChat.prompt.yaml");
         SKFunction chatFunction = SemanticFunction.fromYaml(yamlPath);
 
         ChatCompletion<ChatHistory> gpt35Turbo = ChatCompletion.builder()
@@ -54,7 +55,7 @@ public class Main {
         Plugin searchPlugin = new com.microsoft.semantickernel.v1.plugin.Plugin(
             "Search",
             "Searches Bing for the given query",
-            NativeFunction.getFunctionsFromObject(new Search(BING_API_KEY)).toArray(new SKFunction[0])
+            NativeFunction.getFunctionsFromObject(new Search(BING_API_KEY))
         );                
 
         Kernel kernel = SKBuilders.kernel()
@@ -70,9 +71,9 @@ public class Main {
             String input = System.console().readLine("User > ");
             chatHistory.addUserMessage(input);
 
-            // Run the simple chat
-            // The simple chat function uses the messages variable to generate the next message
-            // see Plugins/ChatPlugin/SimpleChat.prompt.yaml for the full prompt
+            // Run the chat function
+            // The grounded chat function uses the search plugin to perform a Bing search to ground the response
+            // See Plugins/ChatPlugin/GroundedChat.prompt.yaml for the full prompt
             KernelResult result = kernel.runAsync(
                 true, // streaming
                 ContextVariables.builder()
