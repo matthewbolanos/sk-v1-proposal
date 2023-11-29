@@ -6,7 +6,6 @@ import java.math.RoundingMode;
 import java.util.List;
 import java.util.Map;
 
-import com.azure.core.annotation.ReturnType;
 import com.microsoft.semantickernel.Kernel;
 import com.microsoft.semantickernel.skilldefinition.annotations.DefineSKFunction;
 import com.microsoft.semantickernel.skilldefinition.annotations.SKFunctionParameters;
@@ -44,62 +43,27 @@ public class Math
         HandlebarsPlan lastPlan = null;
         Exception lastError = null;
 
-        while (maxTries >= 0)
-        {
-            // Create the planner
-            var planner = new HandlebarsPlanner(
-                kernel, 
-                new HandlebarsPlannerConfiguration()
-                    .setIncludedPlugins(List.of("Math"))
-                    .setIncludedFunctions(List.of("Math.PerformMath", "Math.GenerateMathProblem")) 
-                    .setLastPlan(lastPlan) // Pass in the last plan in case we want to try again
-                    .setLastError(lastError.getMessage()) // Pass in the last error to avoid trying the same thing again
-            );
+        // Create the planner
+        var planner = new HandlebarsPlanner(
+            kernel, 
+            new HandlebarsPlannerConfiguration()
+                .setIncludedPlugins(List.of("Math"))
+                .setIncludedFunctions(List.of("Math.PerformMath", "Math.GenerateMathProblem"))
+                // TODO: setLastPlan and setLastError are problematic 
+                // (null to begin with, how to set them later, does planner need to be recreated each time?)
+                //.setLastPlan(lastPlan) // Pass in the last plan in case we want to try again
+                //.setLastError(lastError.getMessage()) // Pass in the last error to avoid trying the same thing again
+        );
 
-            // TODO: shouldn't be calling block() here
-            HandlebarsPlan plan = planner.createPlanAsync("Solve the following math problem.\n\n" + math_problem).block();
-            lastPlan = plan;
+        Mono<String> plan = 
+            planner.createPlanAsync("Solve the following math problem.\n\n" + math_problem)
+                .retry(maxTries)
+                .flatMap(handlebarsPlan -> handlebarsPlan.invokeAsync(kernel, Map.of()))
+                .flatMap(result -> result.<String>getValueAsync());
 
-
-            // Console.ForegroundColor = ConsoleColor.Blue;
-            // Console.WriteLine("[Plan]");
-            // Console.ForegroundColor = ConsoleColor.DarkBlue;
-            // Console.WriteLine(lastPlan.ToString().Trim());
-            // Console.ResetColor();
-            
-            // Run the plan
-            try {
-                // TODO: shouldn't be calling block() here
-                var result = plan.invokeAsync(kernel, Map.of())
-                    .map(functionResult -> functionResult.<String>getValueAsync())
-                    .block();
-
-                // invokeAsync(kernel, Map.of())
-                // .map(functionResult -> functionResult.getValueAsync());
-                
-                // Console.ForegroundColor = ConsoleColor.Green;
-                // Console.WriteLine("[Result]");
-                // Console.ForegroundColor = ConsoleColor.DarkGreen;
-                // Console.WriteLine(result.ToString().Trim());
-                // Console.ResetColor();
-
-                return result;
-            } catch (Exception e) {
-                // If we get an error, try again
-                lastError = e;
-
-                // Console.ForegroundColor = ConsoleColor.Red;
-                // Console.WriteLine("[Error]");
-                // Console.ForegroundColor = ConsoleColor.DarkRed;
-                // Console.WriteLine(e.Message.ToString().Trim());
-                // Console.ResetColor();
-            }
-            maxTries--;
-        }
-
-        // If we tried too many times, throw an exception
-        return Mono.error(lastError);
-    }
+        return plan;
+        
+}
     
 
     @DefineSKFunction(
