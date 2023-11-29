@@ -57,8 +57,8 @@ public class Math
 
         Mono<String> plan = 
             planner.createPlanAsync("Solve the following math problem.\n\n" + math_problem)
-                .retry(maxTries)
                 .flatMap(handlebarsPlan -> handlebarsPlan.invokeAsync(kernel, Map.of()))
+                .retry(maxTries)
                 .flatMap(result -> result.<String>getValueAsync());
 
         return plan;
