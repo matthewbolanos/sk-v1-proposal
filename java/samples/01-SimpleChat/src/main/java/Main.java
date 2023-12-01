@@ -31,7 +31,7 @@ public class Main {
             .buildAsyncClient();
         // Initialize the required functions and services for the kernel
         Path yamlPath = Path.of(CURRENT_DIRECTORY + "/Plugins/ChatPlugin/PersonaChat.prompt.yaml");
-        SKFunction chatFunction = SemanticFunction.fromYaml(yamlPath);
+        SKFunction chatFunction = SemanticFunction.getFunctionFromYaml(yamlPath);
 
         ChatCompletion<ChatHistory> gpt35Turbo = ChatCompletion.builder()
             .withOpenAIClient(client)

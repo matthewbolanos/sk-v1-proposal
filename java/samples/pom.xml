@@ -19,6 +19,7 @@
         <module>02-PersonaChat</module>
         <module>03-SimpleRag</module>
         <module>04-DynamicRag</module>
+        <module>05-MultiModal</module>
     </modules>
 
     <dependencyManagement>

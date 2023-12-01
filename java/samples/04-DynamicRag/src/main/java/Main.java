@@ -39,7 +39,7 @@ public class Main {
 
         // Initialize the required functions and services for the kernel
         Path yamlPath = Path.of(CURRENT_DIRECTORY + "/Plugins/ChatPlugin/Chat.prompt.yaml");
-        SKFunction chatFunction = SemanticFunction.fromYaml(yamlPath);
+        SKFunction chatFunction = SemanticFunction.getFunctionFromYaml(yamlPath);
 
         ChatCompletion<ChatHistory> gpt35Turbo = ChatCompletion.builder()
             .withOpenAIClient(client)
@@ -54,16 +54,14 @@ public class Main {
         // Create the intent plugin
         Plugin intentPlugin = new com.microsoft.semantickernel.v1.plugin.Plugin(
             "Intent",
-            "Returns a single key that represents the action to be performed next",
-            SemanticFunction.fromYaml(Path.of(CURRENT_DIRECTORY + "/Plugins/IntentPlugin/GetNextStep.prompt.yaml"))
+            SemanticFunction.getFunctionFromYaml(Path.of(CURRENT_DIRECTORY + "/Plugins/IntentPlugin/GetNextStep.prompt.yaml"))
         );  
         
         // Create the math plugin
         Collection<SKFunction> mathFunctions = NativeFunction.getFunctionsFromObject(new Math());
-        mathFunctions.add(SemanticFunction.fromYaml(Path.of(CURRENT_DIRECTORY + "/Plugins/MathPlugin/GetNextStep.prompt.yaml")));
+        mathFunctions.add(SemanticFunction.getFunctionFromYaml(Path.of(CURRENT_DIRECTORY + "/Plugins/MathPlugin/GetNextStep.prompt.yaml")));
         Plugin math = new com.microsoft.semantickernel.v1.plugin.Plugin(
             "Math",
-            "Performs basic math operations",
             mathFunctions
         );
 

@@ -6,10 +6,10 @@ import com.microsoft.semantickernel.orchestration.SKFunction;
 
 public class Plugin implements com.microsoft.semantickernel.plugin.Plugin {
     
-    public Plugin(String name, String description, SKFunction... functions) {
+    public Plugin(String name, SKFunction... functions) {
     }
 
-    public Plugin(String name, String description, Collection<SKFunction> functions) {
+    public Plugin(String name, Collection<SKFunction> functions) {
     }
 
     public String name() {

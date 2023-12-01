@@ -7,12 +7,12 @@ import com.microsoft.semantickernel.orchestration.SKFunction;
 public interface SemanticFunction
 {
 
-    public static SKFunction fromYaml(Path filePath)
+    public static SKFunction getFunctionFromYaml(Path filePath)
     {
         return null;
     }
 
-    public static SKFunction fromYaml(String yamlContent)
+    public static SKFunction getFunctionFromYaml(String yamlContent)
     {
         return null;
     }
